@@ -41,8 +41,6 @@
 
         QV.prototype.mount = function (vnode) {
             vnode.$el.parentNode.replaceChild(vnode.$dom, vnode.$el);
-
-            // vnode.$dom = vnode.$el;
         }
 
         QV.prototype.mountWatcher = function () {

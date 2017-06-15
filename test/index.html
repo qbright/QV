@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<app></app>
+
+
+<script id="t1" type="text/html">
+    <div>
+        <span style="color:red">{{a}}</span> {{sdf}}
+        {{ccc}}
+    </div>
+</script>
+
+<script src="/dist/dev/bundle.js"></script>
+<script>
+
+
+//    console.log(QV);
+
+        var qv = new QV({
+            el: "app",
+            template: "#t1",
+            data: {
+                a: 111,
+                sdf: "hello",
+                ccc: "world"
+            }
+        });
+
+        console.log(qv);
+
+</script>
+
+
+</body>
+</html>

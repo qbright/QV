@@ -1,0 +1,24 @@
+{
+  "name": "QV",
+  "version": "0.0.1",
+  "description": "QV front-end framework",
+  "main": "index.js",
+  "repository": "https://github.com/qbright/QV.git",
+  "author": "zqbright <zhengqiguang1@yy.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-es2015": "^6.24.1",
+    "rollup": "^0.43.0",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-serve": "^0.3.0",
+    "rollup-watch": "^4.0.0"
+  },
+  "scripts": {
+    "build": "node build/build.js",
+    "dev": "rollup -w -c build/dev.config.js"
+  },
+  "dependencies": {
+    "extend": "^3.0.1"
+  }
+}
