@@ -10,6 +10,7 @@ import render from "./render";
 class QV {
     constructor(opt = {}) {
         this._$opt = opt;
+
         this.formatOption(opt);
 
         this.mountRoot();

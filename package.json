@@ -19,6 +19,8 @@
     "dev": "rollup -w -c build/dev.config.js"
   },
   "dependencies": {
-    "extend": "^3.0.1"
+    "extend": "^3.0.1",
+    "html-parse-stringify": "^1.0.2",
+    "lowlight": "^1.9.0"
   }
 }

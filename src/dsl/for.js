@@ -5,8 +5,8 @@
 
 
 const For = {
-    name: "q-for",
-    bind(el){
+    name: "for",
+    general(el){
 
 
     }

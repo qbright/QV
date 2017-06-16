@@ -320,6 +320,7 @@ var QV = function () {
         classCallCheck(this, QV);
 
         this._$opt = opt;
+
         this.formatOption(opt);
 
         this.mountRoot();

@@ -9,9 +9,11 @@
 
 
 <script id="t1" type="text/html">
-    <div>
+    <div class="dfd df" dsl-for="1" :ddd="c">
         <span style="color:red">{{a}}</span> {{sdf}}
         {{ccc}}
+
+        <ddc></ddc>
     </div>
 </script>
 
@@ -19,19 +21,19 @@
 <script>
 
 
-//    console.log(QV);
+    //    console.log(QV);
 
-        var qv = new QV({
-            el: "app",
-            template: "#t1",
-            data: {
-                a: 111,
-                sdf: "hello",
-                ccc: "world"
-            }
-        });
+    var qv = new QV({
+        el: "app",
+        template: "#t1",
+        data: {
+            a: 111,
+            sdf: "hello",
+            ccc: "world"
+        }
+    });
 
-        console.log(qv);
+    console.log(qv);
 
 </script>
 
