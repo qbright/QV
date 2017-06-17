@@ -56,6 +56,7 @@ var createClass = function () {
 
 var compiler_helper = {
     generaltplFn: function generaltplFn(tpl) {
+        console.log(tpl);
         var patt = new RegExp("\{\{\[ \\t\]\*\(\[\@\#\]\?\)\(\\\/\?\)\(\[\\w\\W\]\*\?\)\[ \\t\]\*\}\}", "g"),
             result = void 0;
 

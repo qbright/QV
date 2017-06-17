@@ -4,6 +4,7 @@
 
 const compiler_helper = {
     generaltplFn(tpl){
+        console.log(tpl);
         let patt = new RegExp("\{\{\[ \\t\]\*\(\[\@\#\]\?\)\(\\\/\?\)\(\[\\w\\W\]\*\?\)\[ \\t\]\*\}\}", "g"),
             result;
 
