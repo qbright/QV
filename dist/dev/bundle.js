@@ -57,7 +57,8 @@ var createClass = function () {
 var compiler_helper = {
     generaltplFn: function generaltplFn(tpl) {
         console.log(tpl);
-        var patt = new RegExp("\{\{\[ \\t\]\*\(\[\@\#\]\?\)\(\\\/\?\)\(\[\\w\\W\]\*\?\)\[ \\t\]\*\}\}", "g"),
+
+        var patt = /{{[ \t]*([\w\W]*?)[ \t]*}}/g,
             result = void 0;
 
         var tempStrFn = "",
@@ -72,7 +73,7 @@ var compiler_helper = {
 
             // let $temp2 = tpl.slice(cursor, cursor + result[0].length);
 
-            fnArgs.push(result[3]);
+            fnArgs.push(result[1]);
             tempStrFn += this.wrapDynamicBlock(result);
             cursor += result[0].length;
         }
@@ -95,7 +96,7 @@ var compiler_helper = {
     },
     wrapDynamicBlock: function wrapDynamicBlock(result) {
 
-        return " + od." + result[3] + " + ";
+        return " + od." + result[1] + " + ";
     },
     gTplFn: function gTplFn(str) {
 
@@ -104,6 +105,8 @@ var compiler_helper = {
         $t = $t.replace(/\n/g, "");
 
         var $tempFn = new Function("od", $t);
+
+        console.log($tempFn);
 
         return $tempFn;
     }
