@@ -3,69 +3,64 @@
  */
 
 
-import {parse as htmlParse, stringify as htmlStringify} from "../ast/index";
+import {parse as htmlParse, stringify as htmlStringify} from "../compiler/ast/index";
 
 import Render from "./render";
 
+
 const compiler_helper = {
-    generaltplFn(tpl){
+    _c(tagName, attrs, children = [], data){
+
+        console.log(data);
+
+    },
+    _t(text, data){
 
 
-        //匹配头尾可能存在制表符，空格， 使用 {{}}括起来的字符串
-        let patt = /{{[ \t]*([\w\W]*?)[ \t]*}}/g,
-            result;
+        console.log(text, data);
 
-        let tempStrFn = "",
-            fnArgs = [],
-            cursor = 0;
+    },
+    //
+    // generaltplFn(){
+    //
+    //     let a = new Function("that", "with(that){; return _tt()}");
+    //
+    //     a(this);
+    //
+    //
+    // },
 
-        // console.log(patt.exec(tpl));
+    generaltplFn($ast){
 
-        while ((result = patt.exec(tpl)) !== null) {
+        let $tempFn = this.generalNode($ast);
 
-            // console.log(result);
-            var $temp1 = tpl.slice(cursor, result.index);
-            cursor += $temp1.length;
 
-            tempStrFn += this.wrapStaticBlock($temp1);
+        $tempFn = `with(that){return ${$tempFn}}`;
 
-            // let $temp2 = tpl.slice(cursor, cursor + result[0].length);
+        console.log($tempFn);
 
-            fnArgs.push(result[1]);
-            tempStrFn += this.wrapDynamicBlock(result);
-            cursor += result[0].length;
+        let a = new Function("that", "data", `${$tempFn}`);
+
+        console.log(a(this, {a: 1, sdf: "hello", ccc: "nimei"}));
+
+        return {};
+
+    },
+    generalNode($node){
+
+        if ($node.dsl && $node.dsl.length) { //存在 dsl
+
+        } else if ($node.type === "tag") {
+            return `_c('${$node.name}', ${JSON.stringify($node.attrs)},[${$node.children.map(item => {
+                return this.generalNode(item)
+            })}],data)`
+
+        } else if ($node.type === "text") {
+            $node.content = $node.content.replace(/\n/g, "");
+
+            return `_t('${$node.content.trim()}',data)`
         }
 
-        let tempLast = tpl.slice(cursor, tpl.length);
-
-
-        tempStrFn += this.wrapStaticBlock(tempLast);
-
-        let tplFn = this.gTplFn(tempStrFn);
-
-        return {
-            tplFn: tplFn,
-            linkArgs: fnArgs
-        }
-    },
-    wrapStaticBlock: function (str) {
-
-        return "\'" + str + "\'";
-
-    },
-    wrapDynamicBlock: function (result) {
-
-        return " + od." + result[1] + " + "
-    },
-    gTplFn: function (str) {
-
-        let $t = "return " + str;
-
-        $t = $t.replace(/\n/g, "");
-
-        let $tempFn = new Function("od", $t);
-
-        return $tempFn;
 
     }
 
@@ -81,11 +76,15 @@ class Compiler {
         this.tpl = this.$tpl.outerHTML;
         this.$ast = htmlParse(tpl);
 
+        compiler_helper.generaltplFn(this.$ast[0]);
 
-        console.log(htmlStringify(this.$ast));
 
-        this.init(compiler_helper.generaltplFn(this.tpl));
+        // console.log(htmlStringify(this.$ast));
+
+        // this.init(compiler_helper.generaltplFn(this.tpl));
+
     }
+
 
     init({tplFn, linkArgs}) {
         this.tplFn = tplFn;

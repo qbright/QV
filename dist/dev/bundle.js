@@ -26,6 +26,15 @@ var selector = {
     }
 };
 
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ */
+
+var For = {
+    name: "for",
+    general: function general(el) {}
+};
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -54,81 +63,179 @@ var createClass = function () {
  * Created by zhengqiguang on 2017/6/15.
  */
 
-var compiler_helper = {
-    generaltplFn: function generaltplFn(tpl) {
-        var patt = new RegExp("\{\{\[ \\t\]\*\(\[\@\#\]\?\)\(\\\/\?\)\(\[\\w\\W\]\*\?\)\[ \\t\]\*\}\}", "g"),
-            result = void 0;
+var dsl_prefix = "dsl-";
 
-        var tempStrFn = "",
-            fnArgs = [],
-            cursor = 0;
+var dslMap = {};
 
-        while ((result = patt.exec(tpl)) !== null) {
-            var $temp1 = tpl.slice(cursor, result.index);
-            cursor += $temp1.length;
+var DSL = function () {
+    function DSL() {
+        classCallCheck(this, DSL);
 
-            tempStrFn += this.wrapStaticBlock($temp1);
+        this.initAll();
+    }
 
-            // let $temp2 = tpl.slice(cursor, cursor + result[0].length);
-
-            fnArgs.push(result[3]);
-            tempStrFn += this.wrapDynamicBlock(result);
-            cursor += result[0].length;
+    createClass(DSL, [{
+        key: "initAll",
+        value: function initAll() {
+            dslMap["" + dsl_prefix + For.name] = For;
         }
-
-        var tempLast = tpl.slice(cursor, tpl.length);
-
-        tempStrFn += this.wrapStaticBlock(tempLast);
-
-        var tplFn = this.gTplFn(tempStrFn);
-
-        return {
-            tplFn: tplFn,
-            linkArgs: fnArgs
-        };
-    },
-
-    wrapStaticBlock: function wrapStaticBlock(str) {
-
-        return "\'" + str + "\'";
-    },
-    wrapDynamicBlock: function wrapDynamicBlock(result) {
-
-        return " + od." + result[3] + " + ";
-    },
-    gTplFn: function gTplFn(str) {
-
-        var $t = "console.log(od); return " + str;
-
-        $t = $t.replace(/\n/g, "");
-
-        var $tempFn = new Function("od", $t);
-
-        return $tempFn;
-    }
-
-};
-
-var Compiler = function () {
-    function Compiler(tpl) {
-        classCallCheck(this, Compiler);
-
-        this.tpl = tpl;
-        this.init(compiler_helper.generaltplFn(this.tpl));
-    }
-
-    createClass(Compiler, [{
-        key: "init",
-        value: function init(_ref) {
-            var tplFn = _ref.tplFn,
-                linkArgs = _ref.linkArgs;
-
-            this.tplFn = tplFn;
-            this.linkArgs = linkArgs;
+    }, {
+        key: "dslMap",
+        get: function get$$1() {
+            return dslMap;
         }
     }]);
-    return Compiler;
+    return DSL;
 }();
+
+var dsl = new DSL();
+
+var attrRE = /([:\w-]+)|['"]{1}([^'"]*)['"]{1}/g;
+
+// create optimized lookup object for
+// void elements as listed here:
+// http://www.w3.org/html/wg/drafts/html/master/syntax.html#void-elements
+
+var lookup = Object.create ? Object.create(null) : {};
+lookup.area = true;
+lookup.base = true;
+lookup.br = true;
+lookup.col = true;
+lookup.embed = true;
+lookup.hr = true;
+lookup.img = true;
+lookup.input = true;
+lookup.keygen = true;
+lookup.link = true;
+lookup.menuitem = true;
+lookup.meta = true;
+lookup.param = true;
+lookup.source = true;
+lookup.track = true;
+lookup.wbr = true;
+
+var parseTag = function (tag) {
+    var i = 0;
+    var key;
+    var res = {
+        type: 'tag',
+        name: '',
+        voidElement: false,
+        attrs: {},
+        children: [],
+        dsl: []
+    };
+
+    tag.replace(attrRE, function (match) {
+
+        if (dsl.dslMap[match]) {
+            // res.dsl.push(match);
+        }
+
+        if (i % 2) {
+            key = match;
+        } else {
+            if (i === 0) {
+                if (lookup[match] || tag.charAt(tag.length - 2) === '/') {
+                    res.voidElement = true;
+                }
+                res.name = match;
+            } else {
+                res.attrs[key] = match.replace(/['"]/g, '');
+            }
+        }
+        i++;
+    });
+
+    return res;
+};
+
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ */
+var tagRE = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/g;
+
+var empty = Object.create ? Object.create(null) : {};
+
+var htmlParse = function (html, options) {
+    options || (options = {});
+    options.components || (options.components = empty);
+    var result = [];
+    var current;
+    var level = -1;
+    var arr = [];
+    var byTag = {};
+    var inComponent = false;
+
+    html.replace(tagRE, function (tag, index) {
+        if (inComponent) {
+            if (tag !== '</' + current.name + '>') {
+                return;
+            } else {
+                inComponent = false;
+            }
+        }
+        var isOpen = tag.charAt(1) !== '/';
+        var start = index + tag.length;
+        var nextChar = html.charAt(start);
+        var parent;
+
+        if (isOpen) {
+            level++;
+
+            current = parseTag(tag);
+            if (current.type === 'tag' && options.components[current.name]) {
+                current.type = 'component';
+                inComponent = true;
+            }
+
+            if (!current.voidElement && !inComponent && nextChar && nextChar !== '<') {
+                current.children.push({
+                    type: 'text',
+                    content: html.slice(start, html.indexOf('<', start)),
+                    parent: current
+                });
+            }
+
+            byTag[current.tagName] = current;
+
+            // if we're at root, push new base node
+            if (level === 0) {
+                result.push(current);
+            }
+
+            parent = arr[level - 1];
+
+            if (parent) {
+                current.prev = parent.children[parent.children.length - 1];
+                parent.children[parent.children.length - 1].next = current;
+                parent.children.push(current);
+                current.parent = parent;
+            }
+
+            arr[level] = current;
+        }
+
+        if (!isOpen || current.voidElement) {
+            level--;
+            if (!inComponent && nextChar !== '<' && nextChar) {
+                // trailing text node
+                arr[level].children.push({
+                    type: 'text',
+                    content: html.slice(start, html.indexOf('<', start)),
+                    parent: arr[level]
+                });
+            }
+        }
+    });
+
+    return result;
+};
+
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ * 修改 by  https://github.com/HenrikJoreteg/html-parse-stringify/
+ */
 
 /**
  * Created by zhengqiguang on 2017/6/15.
@@ -154,6 +261,95 @@ var render = {
         node.$el = newDom;
     }
 };
+
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ */
+
+var compiler_helper = {
+    _c: function _c(tagName, attrs) {
+        var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+        var data = arguments[3];
+
+
+        console.log(data);
+    },
+    _t: function _t(text, data) {
+
+        console.log(text, data);
+    },
+
+    //
+    // generaltplFn(){
+    //
+    //     let a = new Function("that", "with(that){; return _tt()}");
+    //
+    //     a(this);
+    //
+    //
+    // },
+
+    generaltplFn: function generaltplFn($ast) {
+
+        var $tempFn = this.generalNode($ast);
+
+        $tempFn = "with(that){return " + $tempFn + "}";
+
+        console.log($tempFn);
+
+        var a = new Function("that", "data", "" + $tempFn);
+
+        console.log(a(this, { a: 1, sdf: "hello", ccc: "nimei" }));
+
+        return {};
+    },
+    generalNode: function generalNode($node) {
+        var _this = this;
+
+        if ($node.dsl && $node.dsl.length) {//存在 dsl
+
+        } else if ($node.type === "tag") {
+            return "_c('" + $node.name + "', " + JSON.stringify($node.attrs) + ",[" + $node.children.map(function (item) {
+                return _this.generalNode(item);
+            }) + "],data)";
+        } else if ($node.type === "text") {
+            $node.content = $node.content.replace(/\n/g, "");
+
+            return "_t('" + $node.content.trim() + "',data)";
+        }
+    }
+};
+
+var Compiler = function () {
+    function Compiler(tpl) {
+        classCallCheck(this, Compiler);
+
+        this.$tpl = render.generalDom(tpl);
+        this.tpl = this.$tpl.outerHTML;
+        this.$ast = htmlParse(tpl);
+
+        compiler_helper.generaltplFn(this.$ast[0]);
+
+        // console.log(htmlStringify(this.$ast));
+
+        // this.init(compiler_helper.generaltplFn(this.tpl));
+    }
+
+    createClass(Compiler, [{
+        key: "init",
+        value: function init(_ref) {
+            var tplFn = _ref.tplFn,
+                linkArgs = _ref.linkArgs;
+
+            this.tplFn = tplFn;
+            this.linkArgs = linkArgs;
+        }
+    }, {
+        key: "rebuild",
+        value: function rebuild() {}
+    }]);
+    return Compiler;
+}();
 
 /**
  * Created by zhengqiguang on 2017/6/15.

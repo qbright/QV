@@ -4,11 +4,12 @@
 
 import selector from  "../common/selector";
 
-import Compiler from "./compiler";
+import Compiler from "./compiler-v2";
 
 import Render  from "./render";
 
 import EventLoop from "./event-loop";
+
 
 class Node {
 
