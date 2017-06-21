@@ -2,13 +2,13 @@
  * Created by zhengqiguang on 2017/6/15.
  */
 
-import _for from "./for";
 
 var dsl_prefix = "dsl-";
 
 const dslMap = {
-    "dsl-if": 1
-
+    "dsl-if": 1,
+    "dsl-for": 1,
+    "dsl-html": 1
 };
 
 class DSL {
@@ -17,7 +17,6 @@ class DSL {
     }
 
     initAll() {
-        dslMap[`${dsl_prefix}${_for.name}`] = _for;
     }
 
     get dslMap() {

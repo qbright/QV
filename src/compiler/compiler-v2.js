@@ -17,13 +17,6 @@ class Compiler {
         this.tpl = this.$tpl.outerHTML;
         this.$ast = htmlParse(tpl);
 
-        // console.log(this.$ast[0]);
-
-        // compiler_helper.generaltplFn(this.$ast[0]);
-
-
-        // console.log(htmlStringify(this.$ast));
-
         this.init(compiler_helper.generaltplFn(this.$ast[0]));
 
     }
@@ -32,11 +25,6 @@ class Compiler {
     init({tplFn, linkArgs}) {
         this.tplFn = tplFn;
         this.linkArgs = linkArgs;
-    }
-
-    rebuild() {
-
-
     }
 
 }

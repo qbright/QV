@@ -10,14 +10,15 @@
 
 <script id="t1" type="text/html">
     <div class="dfd df">
-        <span style="color:red">{{a}}</span> {{sdf}}
+        <span style="color:red">{{a}}</span>
         {{ccc}}
         <span dsl-if="dd"> {{cdcdcd}}</span>
 
-        <div dsl-for="item in ss">
+        <div dsl-for="item in ss" dsl-if="dd">
             {{item}}
         </div>
 
+        <div dsl-html="sdf">12323432</div>
     </div>
 </script>
 
@@ -35,7 +36,7 @@
             dd: false,
             ss: [1, 2, 3, 45],
             a: 111,
-            sdf: "<script>alert(1)<\/script>",
+            sdf: "<span style='color:blue'>dfadfasdf</span>",
             ccc: "world"
         }
     });

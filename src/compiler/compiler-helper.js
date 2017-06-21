@@ -48,6 +48,18 @@ const compiler_helper = {
         };
 
     },
+
+    _h(data, htmlItemName, tagName, attrs = {}){
+
+        let $t = this._c(tagName, attrs).value;
+        $t.innerHTML = data[htmlItemName];
+        return {
+            type: "tag",
+            value: $t
+        }
+
+    },
+
     _t(fn, data){
 
         let temp = fn(data);
@@ -77,7 +89,7 @@ const compiler_helper = {
     generalNode($node, linkArgs){
 
         if ($node.dsl && $node.dsl.length) { //存在 dsl
-            //dsl 优先级 if > for
+            //dsl 优先级 if > for > html
             let $sdlTemp = "";
             let dslIndex;
             if ((dslIndex = $node.dsl.indexOf("dsl-if")) !== -1) { //先判断 if 语句
@@ -106,6 +118,18 @@ const compiler_helper = {
                 return `_f(data,'${result[2]}','${result[1]}',function(data){
                     return ${this.generalNode($node, linkArgs)} ;
                 })`
+
+            } else if ((dslIndex = $node.dsl.indexOf("dsl-html")) !== -1) {
+                //有 html 模板的时候，忽略其中的节点，因为会被替换
+                let itemName = $node.attrs["dsl-html"];//现在只判断了值，没有进行表达式判断
+
+                linkArgs.push(itemName);
+
+                $node.dsl.splice(dslIndex, 1);
+                delete $node.attrs["dsl-html"];
+
+                return `_h(data,'${itemName}','${$node.name}', ${JSON.stringify($node.attrs)})`;
+
 
             }
 

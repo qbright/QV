@@ -26,15 +26,6 @@ var selector = {
     }
 };
 
-/**
- * Created by zhengqiguang on 2017/6/15.
- */
-
-var For = {
-    name: "for",
-    general: function general(el) {}
-};
-
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -63,11 +54,10 @@ var createClass = function () {
  * Created by zhengqiguang on 2017/6/15.
  */
 
-var dsl_prefix = "dsl-";
-
 var dslMap = {
-    "dsl-if": 1
-
+    "dsl-if": 1,
+    "dsl-for": 1,
+    "dsl-html": 1
 };
 
 var DSL = function () {
@@ -79,9 +69,7 @@ var DSL = function () {
 
     createClass(DSL, [{
         key: "initAll",
-        value: function initAll() {
-            dslMap["" + dsl_prefix + For.name] = For;
-        }
+        value: function initAll() {}
     }, {
         key: "dslMap",
         get: function get$$1() {
@@ -292,6 +280,17 @@ var compiler_helper = {
             value: $t
         };
     },
+    _h: function _h(data, htmlItemName, tagName) {
+        var attrs = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+
+        var $t = this._c(tagName, attrs).value;
+        $t.innerHTML = data[htmlItemName];
+        return {
+            type: "tag",
+            value: $t
+        };
+    },
     _t: function _t(fn, data) {
 
         var temp = fn(data);
@@ -319,7 +318,7 @@ var compiler_helper = {
 
         if ($node.dsl && $node.dsl.length) {
             //存在 dsl
-            //dsl 优先级 if > for
+            //dsl 优先级 if > for > html
             var $sdlTemp = "";
             var dslIndex = void 0;
             if ((dslIndex = $node.dsl.indexOf("dsl-if")) !== -1) {
@@ -343,6 +342,16 @@ var compiler_helper = {
                 delete $node.attrs["dsl-for"];
 
                 return "_f(data,'" + result[2] + "','" + result[1] + "',function(data){\n                    return " + this.generalNode($node, linkArgs) + " ;\n                })";
+            } else if ((dslIndex = $node.dsl.indexOf("dsl-html")) !== -1) {
+                //有 html 模板的时候，忽略其中的节点，因为会被替换
+                var _itemName = $node.attrs["dsl-html"]; //现在只判断了值，没有进行表达式判断
+
+                linkArgs.push(_itemName);
+
+                $node.dsl.splice(dslIndex, 1);
+                delete $node.attrs["dsl-html"];
+
+                return "_h(data,'" + _itemName + "','" + $node.name + "', " + JSON.stringify($node.attrs) + ")";
             }
         } else if ($node.type === "tag") {
             return "_c('" + $node.name + "', " + JSON.stringify($node.attrs) + ",[" + $node.children.map(function (item) {
@@ -444,13 +453,6 @@ var Compiler = function () {
         this.tpl = this.$tpl.outerHTML;
         this.$ast = htmlParse(tpl);
 
-        // console.log(this.$ast[0]);
-
-        // compiler_helper.generaltplFn(this.$ast[0]);
-
-
-        // console.log(htmlStringify(this.$ast));
-
         this.init(compiler_helper.generaltplFn(this.$ast[0]));
     }
 
@@ -463,9 +465,6 @@ var Compiler = function () {
             this.tplFn = tplFn;
             this.linkArgs = linkArgs;
         }
-    }, {
-        key: "rebuild",
-        value: function rebuild() {}
     }]);
     return Compiler;
 }();
