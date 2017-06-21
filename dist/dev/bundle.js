@@ -253,8 +253,17 @@ var compiler_helper = {
             value: $t
         };
     },
+    getItemData: function getItemData(data, itemNameSet) {
+
+        if (itemNameSet.length == 1) {
+            return data[itemNameSet[0]];
+        } else {
+            return this.getItemData(data[itemNameSet.shift()], itemNameSet);
+        }
+    },
     _i: function _i(data, itemName, renderIfFn) {
-        if (data[itemName]) {
+
+        if (this.getItemData(data, itemName)) {
             return renderIfFn();
         } else {
             return {
@@ -267,8 +276,10 @@ var compiler_helper = {
 
         var $t = document.createDocumentFragment();
 
-        for (var item in data[itemName]) {
-            data[keyName] = data[itemName][item];
+        var $o = this.getItemData(data, itemName);
+
+        for (var item in $o) {
+            data[keyName] = $o[item];
 
             $t.appendChild(renderEachFn(data).value);
         }
@@ -285,7 +296,7 @@ var compiler_helper = {
 
 
         var $t = this._c(tagName, attrs).value;
-        $t.innerHTML = data[htmlItemName];
+        $t.innerHTML = this.getItemData(data, htmlItemName);
         return {
             type: "tag",
             value: $t
@@ -305,7 +316,6 @@ var compiler_helper = {
         var linkArgs = [];
         var $temp = this.generalNode($ast, linkArgs),
             $tempFn = "with(that){return " + $temp + "}";
-
         var tplFn = new Function("that", "" + $tempFn);
 
         return {
@@ -330,10 +340,10 @@ var compiler_helper = {
                 $node.dsl.splice(dslIndex, 1);
                 delete $node.attrs["dsl-if"];
 
-                return "_i(data,'" + itemName + "',function(){\n                    return " + this.generalNode($node, linkArgs) + " \n                })";
+                return "_i(data," + this.formatParam(itemName) + ",function(){\n                    return " + this.generalNode($node, linkArgs) + " \n                })";
             } else if ((dslIndex = $node.dsl.indexOf("dsl-for")) !== -1) {
                 //
-                var reg = /([\w\W]*?) in ([\w\W].?)/,
+                var reg = /([\w\W]+) in ([\w\W]+)/,
                     result = $node.attrs["dsl-for"].match(reg);
 
                 linkArgs.push(result[2]);
@@ -341,7 +351,7 @@ var compiler_helper = {
                 $node.dsl.splice(dslIndex, 1);
                 delete $node.attrs["dsl-for"];
 
-                return "_f(data,'" + result[2] + "','" + result[1] + "',function(data){\n                    return " + this.generalNode($node, linkArgs) + " ;\n                })";
+                return "_f(data," + this.formatParam(result[2]) + ",'" + result[1] + "',function(data){\n                    return " + this.generalNode($node, linkArgs) + " ;\n                })";
             } else if ((dslIndex = $node.dsl.indexOf("dsl-html")) !== -1) {
                 //有 html 模板的时候，忽略其中的节点，因为会被替换
                 var _itemName = $node.attrs["dsl-html"]; //现在只判断了值，没有进行表达式判断
@@ -351,7 +361,7 @@ var compiler_helper = {
                 $node.dsl.splice(dslIndex, 1);
                 delete $node.attrs["dsl-html"];
 
-                return "_h(data,'" + _itemName + "','" + $node.name + "', " + JSON.stringify($node.attrs) + ")";
+                return "_h(data," + this.formatParam(_itemName) + ",'" + $node.name + "', " + JSON.stringify($node.attrs) + ")";
             }
         } else if ($node.type === "tag") {
             return "_c('" + $node.name + "', " + JSON.stringify($node.attrs) + ",[" + $node.children.map(function (item) {
@@ -405,8 +415,11 @@ var compiler_helper = {
         var $tempFn = new Function("data", $t);
 
         return $tempFn;
+    },
+    formatParam: function formatParam(str) {
+        var $s = str.split(".");
+        return JSON.stringify($s);
     }
-
 };
 
 /**

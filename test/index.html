@@ -11,10 +11,10 @@
 <script id="t1" type="text/html">
     <div class="dfd df">
         <span style="color:red">{{a}}</span>
-        {{ccc}}
+        {{dc}}
         <span dsl-if="dd"> {{cdcdcd}}</span>
 
-        <div dsl-for="item in ss" dsl-if="dd">
+        <div dsl-for="item in o.a" dsl-if="dd">
             {{item}}
         </div>
 
@@ -32,8 +32,18 @@
         el: "app",
         template: "#t1",
         data: {
+            o: {
+                a: [1, 2, 3, 4, 5, 555555],
+                cd: "dfasdfaddddddddddddddddd23"
+            },
+
+            dc: {
+                a: 1,
+                b: 2,
+                c: 3
+            },
             cdcdcd: "ded",
-            dd: false,
+            dd: true,
             ss: [1, 2, 3, 45],
             a: 111,
             sdf: "<span style='color:blue'>dfadfasdf</span>",

@@ -20,8 +20,18 @@ const compiler_helper = {
             value: $t
         };
     },
+    getItemData(data, itemNameSet){
+
+        if (itemNameSet.length == 1) {
+            return data[itemNameSet[0]];
+        } else {
+            return this.getItemData(data[itemNameSet.shift()], itemNameSet);
+        }
+
+    },
     _i(data, itemName, renderIfFn){
-        if (data[itemName]) {
+
+        if (this.getItemData(data, itemName)) {
             return renderIfFn();
         } else {
             return {
@@ -34,8 +44,10 @@ const compiler_helper = {
 
         let $t = document.createDocumentFragment();
 
-        for (let item in data[itemName]) {
-            data[keyName] = data[itemName][item];
+        let $o = this.getItemData(data, itemName);
+
+        for (let item in $o) {
+            data[keyName] = $o[item];
 
             $t.appendChild(renderEachFn(data).value);
         }
@@ -52,7 +64,7 @@ const compiler_helper = {
     _h(data, htmlItemName, tagName, attrs = {}){
 
         let $t = this._c(tagName, attrs).value;
-        $t.innerHTML = data[htmlItemName];
+        $t.innerHTML = this.getItemData(data, htmlItemName);
         return {
             type: "tag",
             value: $t
@@ -76,8 +88,6 @@ const compiler_helper = {
         let $temp = this.generalNode($ast, linkArgs),
 
             $tempFn = `with(that){return ${$temp}}`;
-
-
         let tplFn = new Function("that", `${$tempFn}`);
 
         return {
@@ -101,21 +111,22 @@ const compiler_helper = {
                 delete $node.attrs["dsl-if"];
 
 
-                return `_i(data,'${itemName}',function(){
+                return `_i(data,${this.formatParam(itemName)},function(){
                     return ${this.generalNode($node, linkArgs)} 
                 })`
 
 
             } else if ((dslIndex = $node.dsl.indexOf("dsl-for")) !== -1) { //
-                let reg = /([\w\W]*?) in ([\w\W].?)/,
+                let reg = /([\w\W]+) in ([\w\W]+)/,
                     result = $node.attrs["dsl-for"].match(reg);
+
 
                 linkArgs.push(result[2]);
 
                 $node.dsl.splice(dslIndex, 1);
                 delete $node.attrs["dsl-for"];
 
-                return `_f(data,'${result[2]}','${result[1]}',function(data){
+                return `_f(data,${this.formatParam(result[2])},'${result[1]}',function(data){
                     return ${this.generalNode($node, linkArgs)} ;
                 })`
 
@@ -128,7 +139,7 @@ const compiler_helper = {
                 $node.dsl.splice(dslIndex, 1);
                 delete $node.attrs["dsl-html"];
 
-                return `_h(data,'${itemName}','${$node.name}', ${JSON.stringify($node.attrs)})`;
+                return `_h(data,${this.formatParam(itemName)},'${$node.name}', ${JSON.stringify($node.attrs)})`;
 
 
             }
@@ -191,6 +202,10 @@ const compiler_helper = {
 
         return $tempFn;
 
+    },
+    formatParam(str){
+        let $s = str.split(".");
+        return JSON.stringify($s);
     }
 
 }
