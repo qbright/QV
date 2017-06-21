@@ -6,7 +6,10 @@ import _for from "./for";
 
 var dsl_prefix = "dsl-";
 
-const dslMap = {};
+const dslMap = {
+    "dsl-if": 1
+
+};
 
 class DSL {
     constructor() {

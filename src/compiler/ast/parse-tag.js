@@ -39,7 +39,7 @@ export default function (tag) {
     tag.replace(attrRE, function (match) {
 
         if (dsl.dslMap[match]) {
-           // res.dsl.push(match);
+           res.dsl.push(match);
         }
 
         if (i % 2) {

@@ -4,7 +4,7 @@
 
 import selector from  "../common/selector";
 
-import Compiler from "./compiler-v2";
+import Compiler from "../compiler/compiler-v2";
 
 import Render  from "./render";
 

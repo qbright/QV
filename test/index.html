@@ -9,9 +9,15 @@
 
 
 <script id="t1" type="text/html">
-    <div class="dfd df" dsl-for="1" :ddd="c">
+    <div class="dfd df" :ddd="c">
         <span style="color:red">{{a}}</span> {{sdf}}
         {{ccc}}
+        <span dsl-if="dd"> {{cdcdcd}}</span>
+
+        <div dsl-for="item in ss">
+            {{item}}
+        </div>
+
     </div>
 </script>
 
@@ -25,6 +31,9 @@
         el: "app",
         template: "#t1",
         data: {
+            cdcdcd: "ded",
+            dd: true,
+            ss: [1, 2, 3, 45],
             a: 111,
             sdf: "hello",
             ccc: "world"
