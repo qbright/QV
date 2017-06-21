@@ -14,22 +14,15 @@ const helper = {
                 mounted: false
             }
         }
-
         return $targetData;
-
     }
-
-
 }
 
 class Data {
-
     static formatData(data = {}) {
         data["_od_"] = helper.insertOD(data["_od_"], data);
         return data;
     }
-
-
 }
 
 export default Data;

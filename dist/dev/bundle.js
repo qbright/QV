@@ -56,7 +56,6 @@ var createClass = function () {
 
 var compiler_helper = {
     generaltplFn: function generaltplFn(tpl) {
-        console.log(tpl);
 
         var patt = /{{[ \t]*([\w\W]*?)[ \t]*}}/g,
             result = void 0;
@@ -66,6 +65,9 @@ var compiler_helper = {
             cursor = 0;
 
         while ((result = patt.exec(tpl)) !== null) {
+
+            console.log(result);
+
             var $temp1 = tpl.slice(cursor, result.index);
             cursor += $temp1.length;
 
@@ -100,13 +102,11 @@ var compiler_helper = {
     },
     gTplFn: function gTplFn(str) {
 
-        var $t = "console.log(od); return " + str;
+        var $t = "return " + str;
 
         $t = $t.replace(/\n/g, "");
 
         var $tempFn = new Function("od", $t);
-
-        console.log($tempFn);
 
         return $tempFn;
     }
@@ -292,7 +292,6 @@ var helper = {
                 mounted: false
             };
         }
-
         return $targetData;
     }
 };

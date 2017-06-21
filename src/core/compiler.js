@@ -4,7 +4,6 @@
 
 const compiler_helper = {
     generaltplFn(tpl){
-        console.log(tpl);
 
         let patt = /{{[ \t]*([\w\W]*?)[ \t]*}}/g,
             result;
@@ -15,6 +14,9 @@ const compiler_helper = {
 
 
         while ((result = patt.exec(tpl)) !== null) {
+
+            console.log(result);
+
             var $temp1 = tpl.slice(cursor, result.index);
             cursor += $temp1.length;
 
@@ -50,13 +52,11 @@ const compiler_helper = {
     },
     gTplFn: function (str) {
 
-        let $t = "console.log(od); return " + str;
+        let $t = "return " + str;
 
         $t = $t.replace(/\n/g, "");
 
         let $tempFn = new Function("od", $t);
-
-        console.log($tempFn);
 
         return $tempFn;
 
