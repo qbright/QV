@@ -50,9 +50,10 @@ class Watcher {
 
     linkNode($node) {
 
+
         for (let i = 0, n; n = $node.$args[i]; i++) {
-            if (this.$data[n] &&
-                this.$data["_od_"][n] &&
+            if (this.$data[n] !== undefined &&
+                this.$data["_od_"][n] !== undefined &&
                 this.$data["_od_"][n].linkNodes.indexOf($node) === -1) {
                 this.$data["_od_"][n].linkNodes.push($node);
             }

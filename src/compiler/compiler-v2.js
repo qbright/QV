@@ -19,12 +19,12 @@ class Compiler {
 
         // console.log(this.$ast[0]);
 
-        compiler_helper.generaltplFn(this.$ast[0]);
+        // compiler_helper.generaltplFn(this.$ast[0]);
 
 
         // console.log(htmlStringify(this.$ast));
 
-        // this.init(compiler_helper.generaltplFn(this.tpl));
+        this.init(compiler_helper.generaltplFn(this.$ast[0]));
 
     }
 

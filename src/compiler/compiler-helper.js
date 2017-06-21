@@ -65,23 +65,13 @@ const compiler_helper = {
 
             $tempFn = `with(that){return ${$temp}}`;
 
-        console.log(linkArgs);
 
-        let a = new Function("that", `${$tempFn}`);
+        let tplFn = new Function("that", `${$tempFn}`);
 
-        // console.log(a.toString());
-
-        this.data = {
-            a: 1,
-            sdf: "hello",
-            dd: false,
-            ccc: "nimei",
-            cdcdcd: 2345234,
-            ss: [2, 34, 546, 677]
+        return {
+            tplFn: tplFn,
+            linkArgs: linkArgs
         };
-        console.log(a(this).value.outerHTML);
-
-        return {};
 
     },
     generalNode($node, linkArgs){
@@ -119,7 +109,6 @@ const compiler_helper = {
 
             }
 
-            return ""
 
         } else if ($node.type === "tag") {
             return `_c('${$node.name}', ${JSON.stringify($node.attrs)},[${$node.children.map(item => {

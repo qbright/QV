@@ -9,7 +9,7 @@
 
 
 <script id="t1" type="text/html">
-    <div class="dfd df" :ddd="c">
+    <div class="dfd df">
         <span style="color:red">{{a}}</span> {{sdf}}
         {{ccc}}
         <span dsl-if="dd"> {{cdcdcd}}</span>
@@ -32,15 +32,15 @@
         template: "#t1",
         data: {
             cdcdcd: "ded",
-            dd: true,
+            dd: false,
             ss: [1, 2, 3, 45],
             a: 111,
-            sdf: "hello",
+            sdf: "<script>alert(1)<\/script>",
             ccc: "world"
         }
     });
 
-    console.log(qv);
+    //    console.log(qv);
 
 </script>
 

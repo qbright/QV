@@ -241,31 +241,6 @@ var htmlParse = function (html, options) {
  */
 
 /**
- * Created by zhengqiguang on 2017/6/15.
- */
-
-var render = {
-    mount: function mount($node, $data) {
-
-        var $newDom = this.generalDom($node.$tplfn($data));
-
-        this.replaceNode($newDom, $node);
-    },
-    generalDom: function generalDom(domStr) {
-        var $temp = document.createElement("div");
-        $temp.innerHTML = domStr.trim(); //不然会有多余的空格等东西
-        return $temp.childNodes[0];
-    },
-    replaceNode: function replaceNode(newDom, node) {
-        var $el = node.$el;
-
-        $el.parentNode.replaceChild(newDom, $el);
-
-        node.$el = newDom;
-    }
-};
-
-/**
  * Created by zhengqiguang on 2017/6/21.
  */
 
@@ -332,23 +307,12 @@ var compiler_helper = {
         var $temp = this.generalNode($ast, linkArgs),
             $tempFn = "with(that){return " + $temp + "}";
 
-        console.log(linkArgs);
+        var tplFn = new Function("that", "" + $tempFn);
 
-        var a = new Function("that", "" + $tempFn);
-
-        // console.log(a.toString());
-
-        this.data = {
-            a: 1,
-            sdf: "hello",
-            dd: false,
-            ccc: "nimei",
-            cdcdcd: 2345234,
-            ss: [2, 34, 546, 677]
+        return {
+            tplFn: tplFn,
+            linkArgs: linkArgs
         };
-        console.log(a(this).value.outerHTML);
-
-        return {};
     },
     generalNode: function generalNode($node, linkArgs) {
         var _this = this;
@@ -380,8 +344,6 @@ var compiler_helper = {
 
                 return "_f(data,'" + result[2] + "','" + result[1] + "',function(data){\n                    return " + this.generalNode($node, linkArgs) + " ;\n                })";
             }
-
-            return "";
         } else if ($node.type === "tag") {
             return "_c('" + $node.name + "', " + JSON.stringify($node.attrs) + ",[" + $node.children.map(function (item) {
                 return _this.generalNode(item, linkArgs);
@@ -442,6 +404,38 @@ var compiler_helper = {
  * Created by zhengqiguang on 2017/6/15.
  */
 
+var render = {
+    mount: function mount($node, $data) {
+
+        compiler_helper.data = $data;
+
+        var $newDom = this.generalDom($node.$tplfn(compiler_helper));
+
+        this.replaceNode($newDom, $node);
+    },
+    generalDom: function generalDom(domStr) {
+
+        if (domStr instanceof Object) {
+            return domStr.value;
+        }
+
+        var $temp = document.createElement("div");
+        $temp.innerHTML = domStr.trim(); //不然会有多余的空格等东西
+        return $temp.childNodes[0];
+    },
+    replaceNode: function replaceNode(newDom, node) {
+        var $el = node.$el;
+
+        $el.parentNode.replaceChild(newDom, $el);
+
+        node.$el = newDom;
+    }
+};
+
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ */
+
 var Compiler = function () {
     function Compiler(tpl) {
         classCallCheck(this, Compiler);
@@ -452,11 +446,12 @@ var Compiler = function () {
 
         // console.log(this.$ast[0]);
 
-        compiler_helper.generaltplFn(this.$ast[0]);
+        // compiler_helper.generaltplFn(this.$ast[0]);
+
 
         // console.log(htmlStringify(this.$ast));
 
-        // this.init(compiler_helper.generaltplFn(this.tpl));
+        this.init(compiler_helper.generaltplFn(this.$ast[0]));
     }
 
     createClass(Compiler, [{
@@ -580,7 +575,7 @@ var Watcher = function () {
         value: function linkNode($node) {
 
             for (var i = 0, n; n = $node.$args[i]; i++) {
-                if (this.$data[n] && this.$data["_od_"][n] && this.$data["_od_"][n].linkNodes.indexOf($node) === -1) {
+                if (this.$data[n] !== undefined && this.$data["_od_"][n] !== undefined && this.$data["_od_"][n].linkNodes.indexOf($node) === -1) {
                     this.$data["_od_"][n].linkNodes.push($node);
                 }
             }
