@@ -6,10 +6,8 @@
 </head>
 <body>
 <app></app>
-
-
 <script id="t1" type="text/html">
-    <div class="dfd df" dsl-for="1" :ddd="c">
+    <div>
         <span style="color:red">{{a}}</span> {{sdf}}
         {{ccc}}
     </div>
@@ -17,10 +15,6 @@
 
 <script src="/dist/dev/bundle.js"></script>
 <script>
-
-
-    //    console.log(QV);
-
     var qv = new QV({
         el: "app",
         template: "#t1",
@@ -30,9 +24,6 @@
             ccc: "world"
         }
     });
-
-    console.log(qv);
-
 </script>
 
 
