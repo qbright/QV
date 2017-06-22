@@ -536,23 +536,61 @@ var Node = function () {
  * Created by zhengqiguang on 2017/6/15.
  */
 
+var typeReg = /\[object ([\w\W]+?)\]/;
+
+var gettype = Object.prototype.toString;
+
+var common = {
+    checkType: function checkType(thing) {
+        return gettype.call(thing).match(typeReg)[1];
+    },
+    formatParam: function formatParam(str) {
+        var $s = str.split(".");
+        return JSON.stringify($s);
+    },
+    getItemData: function getItemData(data, itemNameSet) {
+
+        if (itemNameSet.length == 1) {
+            if (!data) {
+                return void 0;
+            }
+            return data[itemNameSet[0]];
+        } else {
+            return this.getItemData(data[itemNameSet.shift()], itemNameSet);
+        }
+    },
+    getOdItemData: function getOdItemData(data, itemNameSet) {
+        if (itemNameSet.length == 1) {
+            if (!data) {
+                return void 0;
+            }
+            return data[itemNameSet[0]];
+        } else {
+            return this.getOdItemData(data[itemNameSet.shift()]["_od_"], itemNameSet);
+        }
+    }
+};
+
+/**
+ * Created by zhengqiguang on 2017/6/15.
+ */
 var Watcher = function () {
     function Watcher(data) {
         classCallCheck(this, Watcher);
 
         this.$data = data;
-        this.mountWatcher();
+        this.mountWatcher(this.$data, this.$data["_od_"]);
     }
 
     createClass(Watcher, [{
         key: "mountWatcher",
-        value: function mountWatcher() {
+        value: function mountWatcher($data, od) {
 
-            var od = this.$data["_od_"];
-
-            for (var key in this.$data) {
+            for (var key in $data) {
 
                 (function (key) {
+
+                    var type = common.checkType($data[key]);
 
                     var timeoutHandler = null;
 
@@ -560,14 +598,17 @@ var Watcher = function () {
                         if (!od[key]) {
                             throw new Error("data:" + key + " is init ");
                         }
-                        Object.defineProperty(this.$data, key, {
+                        Object.defineProperty($data, key, {
                             get: function get$$1() {
                                 return od[key].value;
                             },
                             set: function set$$1(value) {
+                                console.log(123123123);
+
                                 clearTimeout(timeoutHandler);
                                 setTimeout(function () {
                                     if (value !== od[key].value) {
+
                                         var $n = od[key].linkNodes;
                                         od[key].value = value;
                                         for (var i = 0, n; n = $n[i]; i++) {
@@ -578,6 +619,9 @@ var Watcher = function () {
                             }
                         });
                         od[key].mounted = true;
+                        if (type === "Object") {
+                            this.mountWatcher($data[key], od[key]["_od_"]);
+                        }
                     }
                 }).bind(this)(key);
             }
@@ -587,8 +631,16 @@ var Watcher = function () {
         value: function linkNode($node) {
 
             for (var i = 0, n; n = $node.$args[i]; i++) {
-                if (this.$data[n] !== undefined && this.$data["_od_"][n] !== undefined && this.$data["_od_"][n].linkNodes.indexOf($node) === -1) {
-                    this.$data["_od_"][n].linkNodes.push($node);
+
+                var $s = common.formatParam(n);
+
+                var $c = common.getItemData(this.$data, JSON.parse($s));
+
+                var $d = common.getOdItemData(this.$data["_od_"], JSON.parse($s));
+
+                if ($c !== undefined && $d !== undefined && $d.linkNodes.indexOf($node) === -1) {
+
+                    $d.linkNodes.push($node);
                 }
             }
         }
@@ -602,18 +654,31 @@ var Watcher = function () {
 /**
  * Created by zhengqiguang on 2017/6/15.
  */
-
 var helper = {
     insertOD: function insertOD($targetData, $data) {
 
         !$targetData && ($targetData = {});
 
         for (var key in $data) {
-            $targetData[key] = {
-                value: $data[key],
-                linkNodes: [],
-                mounted: false
-            };
+            var type = common.checkType($data[key]);
+
+            if (type === "Object") {
+                var $tempTargetData = {};
+                this.insertOD($tempTargetData, $data[key]);
+                $targetData[key] = {
+                    value: $data[key],
+                    linkNodes: [],
+                    mounted: false,
+                    _od_: $tempTargetData
+                };
+            } else {
+
+                $targetData[key] = {
+                    value: $data[key],
+                    linkNodes: [],
+                    mounted: false
+                };
+            }
         }
 
         return $targetData;

@@ -1,21 +1,24 @@
 /**
  * Created by zhengqiguang on 2017/6/15.
  */
+import common from "../common/common";
 
 class Watcher {
     constructor(data) {
         this.$data = data;
-        this.mountWatcher();
+        this.mountWatcher(this.$data, this.$data["_od_"]);
 
     }
 
-    mountWatcher() {
+    mountWatcher($data, od) {
 
-        let od = this.$data["_od_"];
+        for (let key in $data) {
 
-        for (let key in this.$data) {
 
             (function (key) {
+
+                var type = common.checkType($data[key]);
+
 
                 let timeoutHandler = null;
 
@@ -23,14 +26,18 @@ class Watcher {
                     if (!od[key]) {
                         throw new Error(`data:${key} is init `);
                     }
-                    Object.defineProperty(this.$data, key, {
+                    Object.defineProperty($data, key, {
                         get () {
                             return od[key].value;
                         },
                         set(value) {
+                            console.log(123123123);
+
                             clearTimeout(timeoutHandler);
                             setTimeout(() => {
                                 if (value !== od[key].value) {
+
+
                                     var $n = od[key].linkNodes;
                                     od[key].value = value;
                                     for (var i = 0, n; n = $n[i]; i++) {
@@ -42,7 +49,11 @@ class Watcher {
                         }
                     });
                     od[key].mounted = true;
+                    if (type === "Object") {
+                        this.mountWatcher($data[key], od[key]["_od_"]);
+                    }
                 }
+
             }.bind(this))(key);
 
         }
@@ -50,12 +61,20 @@ class Watcher {
 
     linkNode($node) {
 
-
         for (let i = 0, n; n = $node.$args[i]; i++) {
-            if (this.$data[n] !== undefined &&
-                this.$data["_od_"][n] !== undefined &&
-                this.$data["_od_"][n].linkNodes.indexOf($node) === -1) {
-                this.$data["_od_"][n].linkNodes.push($node);
+
+            let $s = common.formatParam(n);
+
+            let $c = common.getItemData(this.$data, JSON.parse($s));
+
+            let $d = common.getOdItemData(this.$data["_od_"], JSON.parse($s));
+
+            if ($c !== undefined &&
+                $d !== undefined &&
+                $d.linkNodes.indexOf($node) === -1) {
+
+                $d.linkNodes.push($node);
+
             }
         }
     }
