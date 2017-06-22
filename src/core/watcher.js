@@ -3,6 +3,7 @@
  */
 import common from "../common/common";
 
+
 class Watcher {
     constructor(data) {
         this.$data = data;
@@ -31,12 +32,10 @@ class Watcher {
                             return od[key].value;
                         },
                         set(value) {
-                            console.log(123123123);
 
                             clearTimeout(timeoutHandler);
                             setTimeout(() => {
                                 if (value !== od[key].value) {
-
 
                                     var $n = od[key].linkNodes;
                                     od[key].value = value;
@@ -49,8 +48,13 @@ class Watcher {
                         }
                     });
                     od[key].mounted = true;
-                    if (type === "Object") {
+                    if (type === "Object") {// 深度监听
+
                         this.mountWatcher($data[key], od[key]["_od_"]);
+
+                    } else if (type === "Array") {
+                        this.hookArray($data[key], od[key]);
+
                     }
                 }
 
@@ -77,6 +81,40 @@ class Watcher {
 
             }
         }
+    }
+
+    hookArray($d, $o) {
+
+
+        [
+            'push',
+            'pop',
+            'shift',
+            'unshift',
+            'splice',
+            'sort',
+            'reverse'
+        ].forEach(method => {
+
+            (function ($arr, $od) {
+                $arr[method] = function () {
+                    Array.prototype[method].apply($arr, arguments);
+                    $od.value = $arr;
+
+                    var $n = $od.linkNodes;
+                    for (var i = 0, n; n = $n[i]; i++) {
+                        n.update();
+                    }
+                }
+
+                Object.defineProperty($arr, method, {
+                    enumerable: false
+                });
+            })($d, $o);
+
+        });
+
+
     }
 
 

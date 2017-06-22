@@ -603,7 +603,6 @@ var Watcher = function () {
                                 return od[key].value;
                             },
                             set: function set$$1(value) {
-                                console.log(123123123);
 
                                 clearTimeout(timeoutHandler);
                                 setTimeout(function () {
@@ -620,7 +619,11 @@ var Watcher = function () {
                         });
                         od[key].mounted = true;
                         if (type === "Object") {
+                            // 深度监听
+
                             this.mountWatcher($data[key], od[key]["_od_"]);
+                        } else if (type === "Array") {
+                            this.hookArray($data[key], od[key]);
                         }
                     }
                 }).bind(this)(key);
@@ -643,6 +646,29 @@ var Watcher = function () {
                     $d.linkNodes.push($node);
                 }
             }
+        }
+    }, {
+        key: "hookArray",
+        value: function hookArray($d, $o) {
+
+            ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'].forEach(function (method) {
+
+                (function ($arr, $od) {
+                    $arr[method] = function () {
+                        Array.prototype[method].apply($arr, arguments);
+                        $od.value = $arr;
+
+                        var $n = $od.linkNodes;
+                        for (var i = 0, n; n = $n[i]; i++) {
+                            n.update();
+                        }
+                    };
+
+                    Object.defineProperty($arr, method, {
+                        enumerable: false
+                    });
+                })($d, $o);
+            });
         }
     }, {
         key: "updateData",
