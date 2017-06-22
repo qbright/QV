@@ -85,7 +85,6 @@ class Watcher {
 
     hookArray($d, $o) {
 
-
         [
             'push',
             'pop',

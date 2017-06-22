@@ -1,6 +1,7 @@
 /**
  * Created by zhengqiguang on 2017/6/21.
  */
+import common from "../common/common";
 
 const compiler_helper = {
     _c(tagName, attrs = {}, children = []){
@@ -11,9 +12,14 @@ const compiler_helper = {
             $t.setAttribute(key, attrs[key]);
         }
 
+        let $valueSet = []
+
         for (let i = 0, n; n = children[i]; i++) {
+            $valueSet.push(n.value.wholeText);
             $t.appendChild(n.value);
         }
+
+        $valueSet.push(tagName);
 
         return {
             type: "tag",

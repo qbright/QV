@@ -2,9 +2,12 @@
  * Created by zhengqiguang on 2017/6/15.
  */
 
+import md5 from "./md5";
+
 const typeReg = /\[object ([\w\W]+?)\]/;
 
 const gettype = Object.prototype.toString;
+
 
 const common = {
     checkType(thing){
@@ -35,6 +38,11 @@ const common = {
         } else {
             return this.getOdItemData(data[itemNameSet.shift()]["_od_"], itemNameSet);
         }
+    },
+    unique(str){
+
+        return md5(str);
+
 
     }
 
