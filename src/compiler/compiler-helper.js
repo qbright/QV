@@ -3,23 +3,30 @@
  */
 import common from "../common/common";
 
+
+import VDom from "../v-dom/VDom";
+import VText from "../v-dom/VText";
+import VDomFrag from "../v-dom/VDomFrag";
+
+
 const compiler_helper = {
+    VDom: VDom,
+    VText: VText,
+    VDomFrag: VDomFrag,
+
     _c(tagName, attrs = {}, children = []){
 
-        let $t = document.createElement(tagName);
+        let $t = new VDom(tagName);
 
         for (let key in attrs) {
             $t.setAttribute(key, attrs[key]);
         }
 
-        let $valueSet = []
 
         for (let i = 0, n; n = children[i]; i++) {
-            $valueSet.push(n.value.wholeText);
             $t.appendChild(n.value);
         }
 
-        $valueSet.push(tagName);
 
         return {
             type: "tag",
@@ -42,13 +49,13 @@ const compiler_helper = {
         } else {
             return {
                 type: "fragment",
-                value: document.createDocumentFragment()
+                value: new VDomFrag()
             }
         }
     },
     _f(data, itemName, keyName, renderEachFn){
 
-        let $t = document.createDocumentFragment();
+        let $t = new VDomFrag();
 
         let $o = this.getItemData(data, itemName);
 
@@ -84,7 +91,7 @@ const compiler_helper = {
 
         return {
             type: "text",
-            value: document.createTextNode(temp)
+            value: new VText(temp)
         };
     },
 

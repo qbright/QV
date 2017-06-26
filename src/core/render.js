@@ -4,6 +4,8 @@
 
 
 import compiler_helper from "../compiler/compiler-helper";
+import v_dom_to_dom from "../compiler/v-dom-to-dom";
+import diff from "../compiler/diff";
 
 const render = {
 
@@ -11,9 +13,24 @@ const render = {
 
         compiler_helper.data = $data;
 
-        let $newDom = this.generalDom($node.$tplfn(compiler_helper));
+        let $vdom = $node.$tplfn(compiler_helper);
 
-        this.replaceNode($newDom, $node);
+
+        if (!$node.$vDom) {//还没有 vdom，说明是初始化
+
+            let $d = v_dom_to_dom.compiler($vdom.value);
+            $node.$vDom = $vdom;
+            this.replaceNode($d, $node);
+        } else {
+
+            let $df = diff.d_o($node.$vDom, $vdom);
+
+        }
+        //
+        //
+        // let $newDom = this.generalDom($node.$tplfn(compiler_helper));
+        //
+        // this.replaceNode($newDom, $node);
 
     },
 

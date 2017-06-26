@@ -50,6 +50,48 @@ var createClass = function () {
   };
 }();
 
+
+
+
+
+
+
+
+
+var inherits = function (subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
+  }
+
+  subClass.prototype = Object.create(superClass && superClass.prototype, {
+    constructor: {
+      value: subClass,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
+};
+
+
+
+
+
+
+
+
+
+
+
+var possibleConstructorReturn = function (self, call) {
+  if (!self) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }
+
+  return call && (typeof call === "object" || typeof call === "function") ? call : self;
+};
+
 /**
  * Created by zhengqiguang on 2017/6/15.
  */
@@ -522,28 +564,115 @@ var common = {
 };
 
 /**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+
+var VNode = function () {
+    function VNode() {
+        var tagName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
+        var type = arguments[1];
+        classCallCheck(this, VNode);
+
+        this.tagName = tagName;
+        this.type = type;
+        this.attrs = Object.create(null);
+        this.children = [];
+
+        this._innerHtml = null;
+    }
+
+    createClass(VNode, [{
+        key: "appendChild",
+        value: function appendChild(VDom) {
+            this.children.push(VDom);
+        }
+    }, {
+        key: "setAttribute",
+        value: function setAttribute(k, v) {
+            this.attrs[k] = v;
+        }
+    }, {
+        key: "innerHtml",
+        set: function set$$1(value) {
+            this._innerHtml = value;
+        },
+        get: function get$$1() {
+            return this._innerHtml;
+        }
+    }]);
+    return VNode;
+}();
+
+/**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+
+var VDom = function (_VNode) {
+    inherits(VDom, _VNode);
+
+    function VDom(tagName) {
+        classCallCheck(this, VDom);
+        return possibleConstructorReturn(this, (VDom.__proto__ || Object.getPrototypeOf(VDom)).call(this, tagName, "tag"));
+    }
+
+    return VDom;
+}(VNode);
+
+/**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+
+var VText = function (_VNode) {
+    inherits(VText, _VNode);
+
+    function VText(content) {
+        classCallCheck(this, VText);
+
+        var _this = possibleConstructorReturn(this, (VText.__proto__ || Object.getPrototypeOf(VText)).call(this, null, "text"));
+
+        _this.content = content;
+        return _this;
+    }
+
+    return VText;
+}(VNode);
+
+/**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+var VDomFrag = function (_VNode) {
+    inherits(VDomFrag, _VNode);
+
+    function VDomFrag() {
+        classCallCheck(this, VDomFrag);
+        return possibleConstructorReturn(this, (VDomFrag.__proto__ || Object.getPrototypeOf(VDomFrag)).call(this, "", "frag"));
+    }
+
+    return VDomFrag;
+}(VNode);
+
+/**
  * Created by zhengqiguang on 2017/6/21.
  */
 var compiler_helper = {
+    VDom: VDom,
+    VText: VText,
+    VDomFrag: VDomFrag,
+
     _c: function _c(tagName) {
         var attrs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
 
 
-        var $t = document.createElement(tagName);
+        var $t = new VDom(tagName);
 
         for (var key in attrs) {
             $t.setAttribute(key, attrs[key]);
         }
 
-        var $valueSet = [];
-
         for (var i = 0, n; n = children[i]; i++) {
-            $valueSet.push(n.value.wholeText);
             $t.appendChild(n.value);
         }
-
-        $valueSet.push(tagName);
 
         return {
             type: "tag",
@@ -565,13 +694,13 @@ var compiler_helper = {
         } else {
             return {
                 type: "fragment",
-                value: document.createDocumentFragment()
+                value: new VDomFrag()
             };
         }
     },
     _f: function _f(data, itemName, keyName, renderEachFn) {
 
-        var $t = document.createDocumentFragment();
+        var $t = new VDomFrag();
 
         var $o = this.getItemData(data, itemName);
 
@@ -605,7 +734,7 @@ var compiler_helper = {
 
         return {
             type: "text",
-            value: document.createTextNode(temp)
+            value: new VText(temp)
         };
     },
     generaltplFn: function generaltplFn($ast) {
@@ -720,6 +849,93 @@ var compiler_helper = {
 };
 
 /**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+
+var v_dom_to_dom = {
+    compiler: function compiler(vDom) {
+
+        return this.walker(vDom);
+    },
+    walker: function walker(vDom) {
+        if (vDom.type === "tag") {
+
+            var $tag = document.createElement(vDom.tagName);
+            vDom.$rDom = $tag;
+            this.setAttr($tag, vDom.attrs);
+            for (var i = 0, c; c = vDom.children[i]; i++) {
+                $tag.appendChild(this.walker(c));
+            }
+            return $tag;
+        } else if (vDom.type === "text") {
+
+            var $txt = document.createTextNode(vDom.content);
+            vDom.$rDom = $txt;
+            return $txt;
+        } else if (vDom.type === "frag") {
+
+            var $frag = document.createDocumentFragment();
+            for (var _i = 0, _c; _c = vDom.children[_i]; _i++) {
+                $frag.appendChild(this.walker(_c));
+            }
+            return $frag;
+        }
+    },
+    setAttr: function setAttr($d, attrs) {
+        for (var key in attrs) {
+            $d.setAttribute(key, attrs[key]);
+        }
+    }
+};
+
+/**
+ * Created by zhengqiguang on 2017/6/23.
+ */
+
+var diff = {
+    d_o: function d_o($oldDom, $dom) {
+        this.walker($oldDom.value, $dom.value);
+    },
+    walker: function walker($oldDom, $dom) {
+
+        this.doDiff($oldDom, $dom);
+
+        var l = Math.max($oldDom.children.length || 0, $dom.children.length || 0);
+
+        for (var i = 0; i < l; i++) {
+            this.walker($oldDom.children[i], $dom.children[i]);
+        }
+    },
+    doDiff: function doDiff($oldDom, $dom) {
+
+        var d = {
+            diff: [],
+            $oldDom: $oldDom,
+            $dom: $dom
+        };
+
+        if ($oldDom.tagName !== $dom.tagName || $oldDom.type !== $dom.type) {
+            //如果是 tagName 不同或者是 type 不同
+
+            console.warn("tagName or type diff");
+        }
+
+        if (JSON.stringify($oldDom.attrs) !== JSON.stringify($dom.attrs)) {
+            console.warn("attrs diff");
+        }
+
+        if ($oldDom.content !== $dom.content) {
+
+            console.warn("content diff", $oldDom, $dom);
+        }
+
+        if ($oldDom.innerHtml !== $dom.innerHtml) {
+            console.warn("innerHtml diff");
+        }
+    }
+};
+
+/**
  * Created by zhengqiguang on 2017/6/15.
  */
 
@@ -728,9 +944,23 @@ var render = {
 
         compiler_helper.data = $data;
 
-        var $newDom = this.generalDom($node.$tplfn(compiler_helper));
+        var $vdom = $node.$tplfn(compiler_helper);
 
-        this.replaceNode($newDom, $node);
+        if (!$node.$vDom) {
+            //还没有 vdom，说明是初始化
+
+            var $d = v_dom_to_dom.compiler($vdom.value);
+            $node.$vDom = $vdom;
+            this.replaceNode($d, $node);
+        } else {
+
+            var $df = diff.d_o($node.$vDom, $vdom);
+        }
+        //
+        //
+        // let $newDom = this.generalDom($node.$tplfn(compiler_helper));
+        //
+        // this.replaceNode($newDom, $node);
     },
     generalDom: function generalDom(domStr) {
 
@@ -818,6 +1048,7 @@ var Node = function () {
 
         this.$args = this.$compiler.linkArgs;
         this.$tplfn = this.$compiler.tplFn;
+        this.$vDom = null;
     }
 
     createClass(Node, [{

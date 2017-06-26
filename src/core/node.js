@@ -29,6 +29,7 @@ class Node {
 
         this.$args = this.$compiler.linkArgs;
         this.$tplfn = this.$compiler.tplFn;
+        this.$vDom = null;
     }
 
     update() {
