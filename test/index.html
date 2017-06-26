@@ -15,7 +15,9 @@
         <span dsl-if="dd"> {{cdcdcd}}</span>
 
         <div dsl-for="item in o.a" dsl-if="dd">
-            {{item}}
+            <div dsl-for="item in o.a" dsl-if="dd">
+                {{item}}
+            </div>
         </div>
 
         <div dsl-html="sdf">12323432</div>

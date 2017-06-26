@@ -31,8 +31,6 @@ let handlerDiff = {
 
         } else {
             if ($diff.children && $diff.children.length) {
-
-                // console.log(2, $diff.children);
                 this.walkerChildren($diff.children);
             }
         }
@@ -52,7 +50,6 @@ let handlerDiff = {
                 this.removedNode(c);
             }
         }
-
         return false;
     },
     removedNode($dom){
