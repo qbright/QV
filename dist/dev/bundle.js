@@ -694,7 +694,7 @@ var compiler_helper = {
         } else {
             return {
                 type: "fragment",
-                value: new VDomFrag()
+                value: new VText("") //如果使用 documentFragment ,在插入页面之后无法获取其 parentNode,无法进行操作，因此写入一个空的 textNode
             };
         }
     },
@@ -875,9 +875,12 @@ var v_dom_to_dom = {
         } else if (vDom.type === "frag") {
 
             var $frag = document.createDocumentFragment();
+            vDom.$rDom = $frag;
             for (var _i = 0, _c; _c = vDom.children[_i]; _i++) {
                 $frag.appendChild(this.walker(_c));
             }
+
+            // vDom.$rDom = $frag.childNodes[0]; //将$rDom 赋值为 第一个 childNode,替换时才能够找到
             return $frag;
         }
     },
@@ -889,21 +892,100 @@ var v_dom_to_dom = {
 };
 
 /**
+ * Created by zhengqiguang on 2017/6/26.
+ */
+var handlerDiff = {
+    do_diff: function do_diff($diffTree) {
+
+        console.log($diffTree);
+        this.walker($diffTree);
+    },
+    walker: function walker($diff) {
+        if ($diff.diff.length) {
+            var $r = true;
+
+            for (var i = 0, d; d = $diff.diff[i]; i++) {
+
+                if (d.diff.indexOf("tagName") !== -1 || d.diff.indexOf("content") !== -1) {
+                    //标签被换掉了
+                    $r = this.replaceNode(d.$oldDom, d.$dom);
+                }
+
+                if (d.diff.indexOf("remove") !== -1) {
+                    //标签被删除了
+                    $r = this.removedNode(d.$oldDom);
+                }
+
+                $r && this.walkerChildren(d.children);
+            }
+        } else {
+            if ($diff.children && $diff.children.length) {
+
+                // console.log(2, $diff.children);
+                this.walkerChildren($diff.children);
+            }
+        }
+    },
+    walkerChildren: function walkerChildren() {
+        var $diffs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+
+        for (var i = 0, $d; $d = $diffs[i]; i++) {
+            this.walker($d);
+        }
+    },
+    replaceNode: function replaceNode($oldDom, $dom) {
+        if ($oldDom.type !== "frag") {
+            $oldDom.$rDom.parentNode.replaceChild(v_dom_to_dom.compiler($dom), $oldDom.$rDom);
+        } else {
+            //针对 frag 做特殊处理
+            this.replaceNode($oldDom.children[0], $dom);
+            for (var i = 1, c; c = $oldDom.children[i]; i++) {
+                this.removedNode(c);
+            }
+        }
+
+        return false;
+    },
+    removedNode: function removedNode($dom) {
+        $dom.$rDom.parentNode.removeChild($dom.$rDom);
+        return false;
+    }
+};
+
+/**
  * Created by zhengqiguang on 2017/6/23.
  */
 
 var diff = {
     d_o: function d_o($oldDom, $dom) {
-        this.walker($oldDom.value, $dom.value);
+
+        var $diffTree = {};
+
+        this.walker($oldDom.value, $dom.value, $diffTree);
+
+        handlerDiff.do_diff($diffTree);
     },
-    walker: function walker($oldDom, $dom) {
+    walker: function walker($oldDom, $dom, $diffTree) {
 
-        this.doDiff($oldDom, $dom);
+        $diffTree.$oldDom = $oldDom;
+        $diffTree.$dom = $dom;
 
-        var l = Math.max($oldDom.children.length || 0, $dom.children.length || 0);
+        var $d = this.doDiff($oldDom, $dom);
+        $diffTree.diff = [];
 
-        for (var i = 0; i < l; i++) {
-            this.walker($oldDom.children[i], $dom.children[i]);
+        if ($d.diff.length) {
+            $diffTree.diff.push($d);
+        }
+
+        if ($d.diff.indexOf("tagName") == -1) {
+            //如果 tag 不同，则直接整个元素替换
+            var l = Math.max($oldDom && $oldDom.children.length || 0, $dom && $dom.children.length || 0);
+            $diffTree.children = [];
+            for (var i = 0; i < l; i++) {
+                var $ct = {};
+                $diffTree.children.push($ct);
+                this.walker($oldDom && $oldDom.children[i], $dom && $dom.children[i], $ct);
+            }
         }
     },
     doDiff: function doDiff($oldDom, $dom) {
@@ -914,24 +996,47 @@ var diff = {
             $dom: $dom
         };
 
+        if (!$oldDom) {
+            d.diff.push("add");
+            // console.warn("add diff");
+        }
+
+        if (!$dom) {
+            d.diff.push("remove");
+            // console.warn("remove diff");
+        }
+
+        if (!$oldDom || !$dom) {
+            return d;
+        }
+
         if ($oldDom.tagName !== $dom.tagName || $oldDom.type !== $dom.type) {
             //如果是 tagName 不同或者是 type 不同
-
-            console.warn("tagName or type diff");
+            d.diff.push("tagName"
+            // console.warn("tagName or type diff");
+            );
         }
 
         if (JSON.stringify($oldDom.attrs) !== JSON.stringify($dom.attrs)) {
-            console.warn("attrs diff");
+
+            d.diff.push("attrs"
+            // console.warn("attrs diff");
+            );
         }
 
         if ($oldDom.content !== $dom.content) {
-
-            console.warn("content diff", $oldDom, $dom);
+            d.diff.push("content"
+            // console.warn("content diff", $oldDom, $dom);
+            );
         }
 
         if ($oldDom.innerHtml !== $dom.innerHtml) {
-            console.warn("innerHtml diff");
+            d.diff.push("innerHTML"
+            // console.warn("innerHtml diff");
+            );
         }
+
+        return d;
     }
 };
 
@@ -954,7 +1059,9 @@ var render = {
             this.replaceNode($d, $node);
         } else {
 
-            var $df = diff.d_o($node.$vDom, $vdom);
+            diff.d_o($node.$vDom, $vdom);
+
+            $node.$vDom = $vdom;
         }
         //
         //

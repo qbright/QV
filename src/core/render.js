@@ -23,7 +23,9 @@ const render = {
             this.replaceNode($d, $node);
         } else {
 
-            let $df = diff.d_o($node.$vDom, $vdom);
+            diff.d_o($node.$vDom, $vdom);
+
+            $node.$vDom = $vdom;
 
         }
         //

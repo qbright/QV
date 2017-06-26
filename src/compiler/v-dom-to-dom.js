@@ -30,9 +30,12 @@ const v_dom_to_dom = {
         } else if (vDom.type === "frag") {
 
             let $frag = document.createDocumentFragment();
+            vDom.$rDom = $frag;
             for (let i = 0, c; c = vDom.children[i]; i++) {
                 $frag.appendChild(this.walker(c));
             }
+
+            // vDom.$rDom = $frag.childNodes[0]; //将$rDom 赋值为 第一个 childNode,替换时才能够找到
             return $frag;
         }
 

@@ -49,7 +49,7 @@ const compiler_helper = {
         } else {
             return {
                 type: "fragment",
-                value: new VDomFrag()
+                value: new VText("") //如果使用 documentFragment ,在插入页面之后无法获取其 parentNode,无法进行操作，因此写入一个空的 textNode
             }
         }
     },
