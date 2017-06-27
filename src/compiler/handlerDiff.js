@@ -25,6 +25,10 @@ let handlerDiff = {
                     $r = this.removedNode(d.$oldDom);
                 }
 
+                if (d.diff.indexOf("add") !== -1) {
+                    $r = this.addNode(d.$dom);
+                }
+
                 $r && this.walkerChildren(d.children);
 
             }
@@ -55,6 +59,10 @@ let handlerDiff = {
     removedNode($dom){
         $dom.$rDom.parentNode.removeChild($dom.$rDom);
         return false;
+    },
+    addNode($dom){
+
+
     }
 
 

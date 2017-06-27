@@ -671,6 +671,7 @@ var compiler_helper = {
         }
 
         for (var i = 0, n; n = children[i]; i++) {
+            n.parentNode = $t;
             $t.appendChild(n.value);
         }
 
@@ -707,7 +708,7 @@ var compiler_helper = {
         for (var item in $o) {
             data[keyName] = $o[item];
 
-            $t.appendChild(renderEachFn(data).value);
+            $t.appendChild(renderEachFn(data, $t).value);
         }
 
         delete data[keyName];
@@ -916,6 +917,10 @@ var handlerDiff = {
                     $r = this.removedNode(d.$oldDom);
                 }
 
+                if (d.diff.indexOf("add") !== -1) {
+                    $r = this.addNode(d.$dom);
+                }
+
                 $r && this.walkerChildren(d.children);
             }
         } else {
@@ -946,7 +951,8 @@ var handlerDiff = {
     removedNode: function removedNode($dom) {
         $dom.$rDom.parentNode.removeChild($dom.$rDom);
         return false;
-    }
+    },
+    addNode: function addNode($dom) {}
 };
 
 /**

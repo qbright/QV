@@ -24,6 +24,7 @@ const compiler_helper = {
 
 
         for (let i = 0, n; n = children[i]; i++) {
+            n.parentNode = $t;
             $t.appendChild(n.value);
         }
 
@@ -62,7 +63,8 @@ const compiler_helper = {
         for (let item in $o) {
             data[keyName] = $o[item];
 
-            $t.appendChild(renderEachFn(data).value);
+
+            $t.appendChild(renderEachFn(data, $t).value);
         }
 
         delete data[keyName];
