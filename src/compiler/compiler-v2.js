@@ -3,14 +3,13 @@
  */
 
 
-import {parse as htmlParse, stringify as htmlStringify} from "./ast/index";
+import { parse as htmlParse, stringify as htmlStringify } from "./ast/index";
 
 import Render from "../core/render";
 
-import compiler_helper from "./compiler-helper";
+import compiler_helper from "../diff/compiler-helper";
 
 class Compiler {
-
 
     constructor(tpl) {
         this.$tpl = Render.generalDom(tpl);
@@ -20,14 +19,11 @@ class Compiler {
         this.init(compiler_helper.generaltplFn(this.$ast[0]));
 
     }
-
-
-    init({tplFn, linkArgs}) {
+    init({ tplFn, linkArgs }) {
         this.tplFn = tplFn;
         this.linkArgs = linkArgs;
     }
 
 }
-
 
 export default Compiler;

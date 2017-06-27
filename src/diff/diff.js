@@ -2,45 +2,29 @@
  * Created by zhengqiguang on 2017/6/23.
  */
 
-import handlerDiff from  "./handlerDiff";
+import handlerDiff from "./handlerDiff";
 
 const diff = {
-    d_o($oldDom, $dom){
-
-        let $diffTree = {};
-
-        this.walker($oldDom.value, $dom.value, $diffTree);
-
-        handlerDiff.do_diff($diffTree);
-
+    d_o($oldDom, $dom) {
+        this.walker($oldDom.value, $dom.value);
     },
-    walker($oldDom, $dom, $diffTree){
-
-        $diffTree.$oldDom = $oldDom;
-        $diffTree.$dom = $dom;
+    walker($oldDom, $dom) {
 
         let $d = this.doDiff($oldDom, $dom);
-        $diffTree.diff = [];
-
-        if ($d.diff.length) {
-            $diffTree.diff.push($d);
-        }
 
         if ($d.diff.indexOf("tagName") == -1) { //如果 tag 不同，则直接整个元素替换
+
             let l = Math.max(($oldDom && $oldDom.children.length) || 0, ($dom && $dom.children.length) || 0);
-            $diffTree.children = [];
+
             for (let i = 0; i < l; i++) {
-                let $ct = {};
-                $diffTree.children.push($ct)
-                this.walker($oldDom && $oldDom.children[i], $dom && $dom.children[i], $ct);
+                this.walker($oldDom && $oldDom.children[i], $dom && $dom.children[i]);
             }
 
         }
 
-
     },
 
-    doDiff($oldDom, $dom){
+    doDiff($oldDom, $dom) {
 
         let d = {
             diff: [],

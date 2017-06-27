@@ -7,7 +7,6 @@ import vDomToDom from "./v-dom-to-dom";
 let handlerDiff = {
     do_diff($diffTree) {
 
-        console.log($diffTree);
         this.walker($diffTree);
 
     },
@@ -28,15 +27,11 @@ let handlerDiff = {
                 if (d.diff.indexOf("add") !== -1) {
 
                     if (i == ($diff.diff.length - 1)) {//最后一个，直接插入
-                        console.log($diff);
                         $r = this.addNode(d.$dom);
                     }
-
-
                 }
 
                 $r && this.walkerChildren(d.children);
-
             }
 
         } else {
@@ -47,11 +42,13 @@ let handlerDiff = {
 
     },
     walkerChildren($diffs = []) {
+        console.log($diffs);
         for (let i = 0, $d; $d = $diffs[i]; i++) {
             this.walker($d);
         }
     },
     replaceNode($oldDom, $dom) {
+        console.log(1);
         if ($oldDom.type !== "frag") {
             $oldDom.$rDom.parentNode.replaceChild(vDomToDom.compiler($dom), $oldDom.$rDom);
         } else { //针对 frag 做特殊处理
@@ -63,11 +60,15 @@ let handlerDiff = {
         return false;
     },
     removedNode($dom) {
+        console.log(2);
         $dom.$rDom.parentNode.removeChild($dom.$rDom);
         return false;
     },
-    addNode($dom) {
-        console.log($dom);
+    addNode($dom) { //插入到当前节点的后面
+        console.log(3, $dom);
+        let $a = $dom.prev.$rDom.nextSibling;
+        $dom.prev.$rDom.parentNode.insertBefore(vDomToDom.compiler($dom), $a);
+        return true;
     }
 
 

@@ -4,7 +4,9 @@
 
 
 let EventLoop = {
-    d_o(fn){
+    d_o(fn) {
+        // fn();
+
         let p = Promise.resolve();
         p.then(fn).catch((e) => {
             console.log(e);

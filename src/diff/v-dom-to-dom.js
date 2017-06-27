@@ -14,8 +14,7 @@ const v_dom_to_dom = {
         if (vDom.type === "tag") {
 
             let $tag = document.createElement(vDom.tagName);
-            vDom.$rDom = $tag;
-
+            // vDom.$rDom = $tag;
             this.setAttr($tag, vDom.attrs);
 
             if (vDom.innerHTML) {
@@ -31,13 +30,13 @@ const v_dom_to_dom = {
         } else if (vDom.type === "text") {
 
             let $txt = document.createTextNode(vDom.content);
-            vDom.$rDom = $txt;
+            // vDom.$rDom = $txt;
             return $txt;
 
         } else if (vDom.type === "frag") {
 
             let $frag = document.createDocumentFragment();
-            vDom.$rDom = $frag;
+            // vDom.$rDom = $frag;
             for (let i = 0, c; c = vDom.children[i]; i++) {
                 $frag.appendChild(this.walker(c));
             }

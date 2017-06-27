@@ -717,7 +717,7 @@ var compiler_helper = {
         } else {
             return {
                 type: "fragment",
-                value: new VText("") //如果使用 documentFragment ,在插入页面之后无法获取其 parentNode,无法进行操作，因此写入一个空的 textNode
+                value: new VDomFrag() //如果使用 documentFragment ,在插入页面之后无法获取其 parentNode,无法进行操作，因此写入一个空的 textNode
             };
         }
     },
@@ -884,8 +884,7 @@ var v_dom_to_dom = {
         if (vDom.type === "tag") {
 
             var $tag = document.createElement(vDom.tagName);
-            vDom.$rDom = $tag;
-
+            // vDom.$rDom = $tag;
             this.setAttr($tag, vDom.attrs);
 
             if (vDom.innerHTML) {
@@ -900,12 +899,12 @@ var v_dom_to_dom = {
         } else if (vDom.type === "text") {
 
             var $txt = document.createTextNode(vDom.content);
-            vDom.$rDom = $txt;
+            // vDom.$rDom = $txt;
             return $txt;
         } else if (vDom.type === "frag") {
 
             var $frag = document.createDocumentFragment();
-            vDom.$rDom = $frag;
+            // vDom.$rDom = $frag;
             for (var _i = 0, _c; _c = vDom.children[_i]; _i++) {
                 $frag.appendChild(this.walker(_c));
             }
@@ -921,160 +920,359 @@ var v_dom_to_dom = {
 };
 
 /**
- * Created by zhengqiguang on 2017/6/26.
+ * Created by zhengqiguang on 2017/6/15.
  */
-var handlerDiff = {
-    do_diff: function do_diff($diffTree) {
 
-        console.log($diffTree);
-        this.walker($diffTree);
+var _ = {
+    type: function type(obj) {
+        return Object.prototype.toString.call(obj).replace(/\[object\s|\]/g, '');
     },
-    walker: function walker($diff) {
-        if ($diff.diff.length) {
-            var $r = true;
-
-            for (var i = 0, d; d = $diff.diff[i]; i++) {
-
-                if (d.diff.indexOf("tagName") !== -1 || d.diff.indexOf("content") !== -1) {
-                    //标签被换掉了
-                    $r = this.replaceNode(d.$oldDom, d.$dom);
-                }
-
-                if (d.diff.indexOf("remove") !== -1) {
-                    //标签被删除了
-                    $r = this.removedNode(d.$oldDom);
-                }
-
-                if (d.diff.indexOf("add") !== -1) {
-
-                    if (i == $diff.diff.length - 1) {
-                        //最后一个，直接插入
-                        console.log($diff);
-                        $r = this.addNode(d.$dom);
-                    }
-                }
-
-                $r && this.walkerChildren(d.children);
-            }
-        } else {
-            if ($diff.children && $diff.children.length) {
-                this.walkerChildren($diff.children);
-            }
+    isArray: function isArray(list) {
+        return this.type(list) === 'Array';
+    },
+    slice: function slice(arrayLike, index) {
+        return Array.prototype.slice.call(arrayLike, index);
+    },
+    truthy: function truthy(value) {
+        return !!value;
+    },
+    isString: function isString(list) {
+        return this.type(list) === 'String';
+    },
+    each: function each(array, fn) {
+        for (var i = 0, len = array.length; i < len; i++) {
+            fn(array[i], i);
         }
     },
-    walkerChildren: function walkerChildren() {
-        var $diffs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+    toArray: function toArray(listLike) {
+        if (!listLike) {
+            return [];
+        }
+        var list = [];
 
-        for (var i = 0, $d; $d = $diffs[i]; i++) {
-            this.walker($d);
+        for (var i = 0, len = listLike.length; i < len; i++) {
+            list.push(listLike[i]);
         }
+
+        return list;
     },
-    replaceNode: function replaceNode($oldDom, $dom) {
-        if ($oldDom.type !== "frag") {
-            $oldDom.$rDom.parentNode.replaceChild(v_dom_to_dom.compiler($dom), $oldDom.$rDom);
-        } else {
-            //针对 frag 做特殊处理
-            this.replaceNode($oldDom.children[0], $dom);
-            for (var i = 1, c; c = $oldDom.children[i]; i++) {
-                this.removedNode(c);
-            }
+    setAttr: function setAttr(node, key, value) {
+        switch (key) {
+            case 'style':
+                node.style.cssText = value;
+                break;
+            case 'value':
+                var tagName = node.tagName || '';
+                tagName = tagName.toLowerCase();
+                if (tagName === 'input' || tagName === 'textarea') {
+                    node.value = value;
+                } else {
+                    // if it is not a input or textarea, use `setAttribute` to set
+                    node.setAttribute(key, value);
+                }
+                break;
+            default:
+                node.setAttribute(key, value);
+                break;
         }
-        return false;
-    },
-    removedNode: function removedNode($dom) {
-        $dom.$rDom.parentNode.removeChild($dom.$rDom);
-        return false;
-    },
-    addNode: function addNode($dom) {
-        console.log($dom);
     }
 };
 
-/**
- * Created by zhengqiguang on 2017/6/23.
- */
-
-var diff = {
-    d_o: function d_o($oldDom, $dom) {
-
-        var $diffTree = {};
-
-        this.walker($oldDom.value, $dom.value, $diffTree);
-
-        handlerDiff.do_diff($diffTree);
+var patch = {
+    REPLACE: 0,
+    REORDER: 1,
+    ATTRS: 2,
+    TEXT: 3,
+    patch: function patch(node, patches) {
+        var walker = { index: 0 };
+        this.dfsWalk(node, walker, patches);
     },
-    walker: function walker($oldDom, $dom, $diffTree) {
+    dfsWalk: function dfsWalk(node, walker, patches) {
+        var currentPatches = patches[walker.index],
+            len = node.childNodes ? node.childNodes.length : 0;
 
-        $diffTree.$oldDom = $oldDom;
-        $diffTree.$dom = $dom;
-
-        var $d = this.doDiff($oldDom, $dom);
-        $diffTree.diff = [];
-
-        if ($d.diff.length) {
-            $diffTree.diff.push($d);
+        for (var i = 0; i < len; i++) {
+            var child = node.childNodes[i];
+            walker.index++;
+            this.dfsWalk(child, walker, patches);
         }
 
-        if ($d.diff.indexOf("tagName") == -1) {
-            //如果 tag 不同，则直接整个元素替换
-            var l = Math.max($oldDom && $oldDom.children.length || 0, $dom && $dom.children.length || 0);
-            $diffTree.children = [];
-            for (var i = 0; i < l; i++) {
-                var $ct = {};
-                $diffTree.children.push($ct);
-                this.walker($oldDom && $oldDom.children[i], $dom && $dom.children[i], $ct);
+        if (currentPatches) {
+            this.applyPatches(node, currentPatches);
+        }
+    },
+    applyPatches: function applyPatches(node, currentPatches) {
+        var _this = this;
+
+        _.each(currentPatches, function (currentPatch) {
+
+            switch (currentPatch.type) {
+                case _this.REPLACE:
+                    var newNode = v_dom_to_dom.compiler(currentPatch.node);
+                    node.parentNode.replaceChild(newNode, node);
+                    break;
+
+                case _this.REORDER:
+                    _this.reorderChildren(node, currentPatch.moves);
+                    break;
+
+                case _this.ATTRS:
+                    _this.setAttrs(node, currentPatch.props);
+                    break;
+                case _this.TEXT:
+                    node.textContent = currentPatch.node.content;
+                    break;
+                default:
+                    throw new Error("Unkown patch type " + currentPach.type);
             }
-        }
+        });
     },
-    doDiff: function doDiff($oldDom, $dom) {
+    setAttrs: function setAttrs(node, attrs) {},
+    reorderChildren: function reorderChildren(node, moves) {}
+};
 
-        var d = {
-            diff: [],
-            $oldDom: $oldDom,
-            $dom: $dom
+var listDiff = {
+    REMOVE: 0,
+    INSERT: 1,
+    diff: function diff(oldList, newList, key) {
+        var _this = this;
+
+        var oldMap = this.convertListByKey(oldList, key),
+            newMap = this.convertListByKey(newList, key);
+
+        // console.log(oldMap, newMap);
+
+        var newFree = newMap.free;
+
+        var oldKeyIndex = oldMap.keyIndex,
+            newKeyIndex = newMap.keyIndex,
+            moves = [],
+            children = [],
+            i = 0,
+            item = void 0,
+            itemKey = void 0,
+            freeIndex = 0;
+
+        var remove = function remove(index) {
+            var move = { index: index, type: _this.REMOVE };
+            moves.push(move);
         };
 
-        if (!$oldDom) {
-            d.diff.push("add");
-            // console.warn("add diff");
+        var insert = function insert(index, item) {
+            var move = { index: index, item: item, type: _this.INSERT };
+            moves.push(move);
+        };
+
+        var removeSimulate = function removeSimulate(index) {
+            simulateList.splice(index, 1);
+        };
+
+        while (i < oldList.length) {
+            //在旧的 list 里面判断
+            item = oldList[i];
+            itemKey = this.getItemKey(item, key);
+            if (itemKey) {
+                if (!newKeyIndex[itemKey]) {
+                    children.push(null);
+                } else {
+                    var newItemIndex = newKeyIndex[itemKey];
+                    children.push(newList[newItemIndex]);
+                }
+            } else {
+                var freeItem = newFree[freeIndex++];
+                children.push(freeItem || null);
+            }
+            i++;
         }
 
-        if (!$dom) {
-            d.diff.push("remove");
-            // console.warn("remove diff");
+        // console.log(children);
+        var simulateList = children.slice(0);
+
+        i = 0;
+
+        while (i < simulateList.length) {
+            if (simulateList[i] === null) {
+                console.log(simulateList[i]);
+                remove(i);
+                removeSimulate(i);
+            } else {
+                i++;
+            }
         }
 
-        if (!$oldDom || !$dom) {
-            return d;
+        i = 0;
+        var j = 0;
+
+        while (i < newList.length) {
+            item = newList[i];
+            itemKey = this.getItemKey(item, key);
+
+            var simulateItem = simulateList[j],
+                simulateItemKey = this.getItemKey(simulateItem, key);
+
+            if (simulateItem) {
+                if (itemKey === simulateItemKey) {
+                    j++;
+                } else {
+                    if (!oldKeyIndex.hasOwnProperty(itemKey)) {
+                        insert(i, item);
+                    } else {
+
+                        var nextItemKey = this.getItemKey(simulateList[j + 1], key);
+                        if (nextItemKey === itemKey) {
+                            remove(i);
+                            removeSimulate(i);
+                            j++;
+                        } else {
+                            insert(i, item);
+                        }
+                    }
+                }
+            } else {
+                insert(i, item);
+            }
+
+            i++;
         }
 
-        if ($oldDom.tagName !== $dom.tagName || $oldDom.type !== $dom.type) {
-            //如果是 tagName 不同或者是 type 不同
-            d.diff.push("tagName"
-            // console.warn("tagName or type diff");
-            );
+        var k = 0;
+        while (j++ < simulateList.length) {
+            remove(k + i);
+            k++;
         }
 
-        if (JSON.stringify($oldDom.attrs) !== JSON.stringify($dom.attrs)) {
+        return { moves: moves, children: children };
+    },
+    convertListByKey: function convertListByKey(list, key) {
+        var keyIndex = {},
+            free = [];
 
-            d.diff.push("attrs"
-            // console.warn("attrs diff");
-            );
+        for (var i = 0, len = list.length; i < len; i++) {
+            var item = list[i],
+                itemKey = this.getItemKey(item, key);
+
+            if (itemKey) {
+                keyIndex[itemKey] = i;
+            } else {
+                free.push(item);
+            }
         }
 
-        if ($oldDom.content !== $dom.content) {
-            d.diff.push("content"
-            // console.warn("content diff", $oldDom, $dom);
-            );
+        return { keyIndex: keyIndex, free: free };
+    },
+    getItemKey: function getItemKey(item, key) {
+        if (!item || !key) {
+            return void 0;
         }
 
-        if ($oldDom.innerHtml !== $dom.innerHtml) {
-            d.diff.push("innerHTML"
-            // console.warn("innerHtml diff");
-            );
+        return typeof key === "string" ? item[key] : key(item);
+    }
+};
+
+var diff = {
+    d_o: function d_o(oldTree, newTree) {
+        var index = 0,
+            patches = {};
+
+        this.dfsWalk(oldTree, newTree, index, patches);
+
+        return patches;
+    },
+
+    /**
+     * 深度优先遍历 
+     * @param {*} oldTree 
+     * @param {*} newTree 
+     * @param {*} index 
+     * @param {*} patches 
+     */
+    dfsWalk: function dfsWalk(oldNode, newNode, index, patches) {
+
+        var currentPatch = [];
+
+        if (!newNode) {//节点被删除
+
+        } else if (oldNode.type === "text" && newNode.type === "text") {
+            if (oldNode.content !== newNode.content) {
+                currentPatch.push({ type: patch.TEXT, newNode: newNode });
+            }
+        } else if (oldNode.type === "tag" && newNode.type === "tag" && //如果 type 和标签名是一样的
+        oldNode.tagName === newNode.tagName) {
+            var propsPatches = this.attrDiff(oldNode.attrs, newNode.attrs);
+            if (propsPatches) {
+                currentPatch.push({ type: patch.ATTRS, props: propsPatches });
+            }
+            this.diffChildren(oldNode.children, newNode.children, index, patches, currentPatch);
+        } else {
+            currentPatch.push({ type: patch.REPLACE, node: newNode });
         }
 
-        return d;
+        if (currentPatch.length) {
+            patches[index] = currentPatch;
+        }
+    },
+    diffChildren: function diffChildren(oldChildren) {
+        var newChildren = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+        var index = arguments[2];
+
+        var _this = this;
+
+        var patches = arguments[3];
+        var currentPatch = arguments[4];
+
+
+        var diffs = listDiff.diff(oldChildren, newChildren, 'key');
+
+        console.log(diffs);
+
+        newChildren = diffs.children;
+
+        if (diffs.moves.length) {
+            currentPatch.push({ type: patch.REORDER, moves: diffs.moves });
+        }
+
+        var leftNode = null,
+            currentNodeIndex = index;
+
+        _.each(oldChildren, function (child, i) {
+            var newChild = newChildren[i];
+            currentNodeIndex = leftNode && leftNode.count ? currentNodeIndex + leftNode.count + 1 : currentNodeIndex + 1;
+
+            _this.dfsWalk(child, newChild, currentNodeIndex, patches);
+
+            leftNode = child;
+        });
+    },
+    attrDiff: function attrDiff(oldAttrs, newAttrs) {
+
+        var count = 0;
+
+        var key, value;
+        var propsPatches = {};
+
+        // Find out different properties
+        for (key in oldAttrs) {
+            value = oldAttrs[key];
+            if (newAttrs[key] !== value) {
+                count++;
+                propsPatches[key] = newAttrs[key];
+            }
+        }
+
+        // Find out new property
+        for (key in newAttrs) {
+            value = newAttrs[key];
+            if (!oldAttrs[key]) {
+                count++;
+                propsPatches[key] = newAttrs[key];
+            }
+        }
+
+        // If properties all are identical
+        if (count === 0) {
+            return null;
+        }
+        return propsPatches;
     }
 };
 
@@ -1091,21 +1289,16 @@ var render = {
 
         if (!$node.$vDom) {
             //还没有 vdom，说明是初始化
-
             var $d = v_dom_to_dom.compiler($vdom.value);
             $node.$vDom = $vdom;
             this.replaceNode($d, $node);
         } else {
-
-            diff.d_o($node.$vDom, $vdom);
+            var patches = diff.d_o($node.$vDom.value, $vdom.value);
+            console.warn("warn:", patches);
+            patch.patch($node.$el, patches);
 
             $node.$vDom = $vdom;
         }
-        //
-        //
-        // let $newDom = this.generalDom($node.$tplfn(compiler_helper));
-        //
-        // this.replaceNode($newDom, $node);
     },
     generalDom: function generalDom(domStr) {
 
@@ -1160,6 +1353,8 @@ var Compiler = function () {
 
 var EventLoop = {
     d_o: function d_o(fn) {
+        // fn();
+
         var p = Promise.resolve();
         p.then(fn).catch(function (e) {
             console.log(e);

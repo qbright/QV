@@ -1,59 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
+
 <body>
-<app></app>
+    <app></app>
 
 
-<script id="t1" type="text/html">
-    <div class="dfd df">
-        <span style="color:red">{{o.t.fdf}}</span>
-        {{dc}}
-        <span dsl-if="dd"> {{cdcdcd}}</span>
+    <script id="t1" type="text/html">
+        <div class="dfd df">
+            <div>
+                <div>
+                    <div dsl-if="t1">{{ccc1}}</div>
+                    <div dsl-if="t2">{{ccc}}</div>
+                    <div dsl-for="item in a">
+                        {{item}}
+                    </div>
 
-        <div dsl-for="item in o.a" dsl-if="dd">
-            {{item}}
+                </div>
+            </div>
+            <div>
+                {{ccc}}
+            </div>
+
         </div>
+    </script>
 
-        <div dsl-html="sdf">12323432</div>
-    </div>
-</script>
+    <script src="/dist/dev/bundle.js"></script>
+    <script>
+        //    console.log(QV);
 
-<script src="/dist/dev/bundle.js"></script>
-<script>
+        var qv = new QV({
+            el: "app",
+            template: "#t1",
+            data: {
+                a: [1, 2, 3, 4, 5],
+                t2: false,
+                t1: true,
+                ccc: "world",
+                ccc1: "dddd"
 
-
-    //    console.log(QV);
-
-    var qv = new QV({
-        el: "app",
-        template: "#t1",
-        data: {
-            o: {
-                a: [1, 2, 3, 4, 5, 555555],
-                cd: "dfasdfaddddddddddddddddd23",
-                t: {
-                    fdf: 1
-                }
-            },
-            dc: "it is a text",
-
-            cdcdcd: "ded",
-            dd: true,
-            ss: [1, 2, 3, 45],
-            a: 111,
-            sdf: "<span style='color:blue'>dfadfasdf</span>",
-            ccc: "world"
-        }
-    });
+            }
+        });
 
     //    console.log(qv);
-
-</script>
+    </script>
 
 
 </body>
+
 </html>
