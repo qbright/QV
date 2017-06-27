@@ -659,6 +659,20 @@ var compiler_helper = {
     VText: VText,
     VDomFrag: VDomFrag,
 
+    setParent: function setParent($s, parentNode) {
+        $s.parentNode = parentNode;
+    },
+    setBother: function setBother($children) {
+        for (var i = 0, $c; $c = $children[i]; i++) {
+            $c.prev = $children[i - 1];
+            $c.next = $children[i + 1];
+        }
+    },
+    insertFragment: function insertFragment($t, $fragment) {
+        for (var i = 0, $c; $c = $fragment.children[i]; i++) {
+            $t.appendChild($c);
+        }
+    },
     _c: function _c(tagName) {
         var attrs = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
@@ -671,8 +685,16 @@ var compiler_helper = {
         }
 
         for (var i = 0, n; n = children[i]; i++) {
-            n.parentNode = $t;
-            $t.appendChild(n.value);
+            //前后插入 , 还有父级
+            if (n.type === "fragment") {
+                this.insertFragment($t, n.value);
+            } else {
+                $t.appendChild(n.value);
+            }
+        }
+        for (var _i = 0, $c; $c = $t.children[_i]; _i++) {
+            this.setParent($c, $t);
+            this.setBother($t.children);
         }
 
         return {
@@ -863,7 +885,14 @@ var v_dom_to_dom = {
 
             var $tag = document.createElement(vDom.tagName);
             vDom.$rDom = $tag;
+
             this.setAttr($tag, vDom.attrs);
+
+            if (vDom.innerHTML) {
+                $tag.innerHTML = vDom.innerHTML;
+                return $tag;
+            }
+
             for (var i = 0, c; c = vDom.children[i]; i++) {
                 $tag.appendChild(this.walker(c));
             }
@@ -881,7 +910,6 @@ var v_dom_to_dom = {
                 $frag.appendChild(this.walker(_c));
             }
 
-            // vDom.$rDom = $frag.childNodes[0]; //将$rDom 赋值为 第一个 childNode,替换时才能够找到
             return $frag;
         }
     },
@@ -918,7 +946,12 @@ var handlerDiff = {
                 }
 
                 if (d.diff.indexOf("add") !== -1) {
-                    $r = this.addNode(d.$dom);
+
+                    if (i == $diff.diff.length - 1) {
+                        //最后一个，直接插入
+                        console.log($diff);
+                        $r = this.addNode(d.$dom);
+                    }
                 }
 
                 $r && this.walkerChildren(d.children);
@@ -952,7 +985,9 @@ var handlerDiff = {
         $dom.$rDom.parentNode.removeChild($dom.$rDom);
         return false;
     },
-    addNode: function addNode($dom) {}
+    addNode: function addNode($dom) {
+        console.log($dom);
+    }
 };
 
 /**

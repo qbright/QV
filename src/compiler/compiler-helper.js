@@ -14,7 +14,22 @@ const compiler_helper = {
     VText: VText,
     VDomFrag: VDomFrag,
 
-    _c(tagName, attrs = {}, children = []){
+    setParent($s, parentNode) {
+        $s.parentNode = parentNode;
+    },
+    setBother($children) {
+        for (let i = 0, $c; $c = $children[i]; i++) {
+            $c.prev = $children[i - 1];
+            $c.next = $children[i + 1];
+        }
+    },
+
+    insertFragment($t, $fragment) {
+        for (let i = 0, $c; $c = $fragment.children[i]; i++) {
+            $t.appendChild($c);
+        }
+    },
+    _c(tagName, attrs = {}, children = []) {
 
         let $t = new VDom(tagName);
 
@@ -23,18 +38,26 @@ const compiler_helper = {
         }
 
 
-        for (let i = 0, n; n = children[i]; i++) {
-            n.parentNode = $t;
-            $t.appendChild(n.value);
-        }
 
+        for (let i = 0, n; n = children[i]; i++) {//前后插入 , 还有父级
+            if (n.type === "fragment") {
+                this.insertFragment($t, n.value);
+            } else {
+                $t.appendChild(n.value);
+            }
+
+        }
+        for (let i = 0, $c; $c = $t.children[i]; i++) {
+            this.setParent($c, $t);
+            this.setBother($t.children);
+        }
 
         return {
             type: "tag",
             value: $t
         };
     },
-    getItemData(data, itemNameSet){
+    getItemData(data, itemNameSet) {
 
         if (itemNameSet.length == 1) {
             return data[itemNameSet[0]];
@@ -43,7 +66,7 @@ const compiler_helper = {
         }
 
     },
-    _i(data, itemName, renderIfFn){
+    _i(data, itemName, renderIfFn) {
 
         if (this.getItemData(data, itemName)) {
             return renderIfFn();
@@ -54,7 +77,7 @@ const compiler_helper = {
             }
         }
     },
-    _f(data, itemName, keyName, renderEachFn){
+    _f(data, itemName, keyName, renderEachFn) {
 
         let $t = new VDomFrag();
 
@@ -76,7 +99,7 @@ const compiler_helper = {
 
     },
 
-    _h(data, htmlItemName, tagName, attrs = {}){
+    _h(data, htmlItemName, tagName, attrs = {}) {
 
         let $t = this._c(tagName, attrs).value;
         $t.innerHTML = this.getItemData(data, htmlItemName);
@@ -87,7 +110,7 @@ const compiler_helper = {
 
     },
 
-    _t(fn, data){
+    _t(fn, data) {
 
         let temp = fn(data);
 
@@ -97,7 +120,7 @@ const compiler_helper = {
         };
     },
 
-    generaltplFn($ast){
+    generaltplFn($ast) {
 
         let linkArgs = [];
         let $temp = this.generalNode($ast, linkArgs),
@@ -111,7 +134,7 @@ const compiler_helper = {
         };
 
     },
-    generalNode($node, linkArgs){
+    generalNode($node, linkArgs) {
 
         if ($node.dsl && $node.dsl.length) { //存在 dsl
             //dsl 优先级 if > for > html
@@ -203,7 +226,7 @@ const compiler_helper = {
         return "\'" + str + "\'";
 
     },
-    wrapDynamicBlock (result) {
+    wrapDynamicBlock(result) {
 
         return " + data." + result[1] + " + "
     },
@@ -218,7 +241,7 @@ const compiler_helper = {
         return $tempFn;
 
     },
-    formatParam(str){
+    formatParam(str) {
         let $s = str.split(".");
         return JSON.stringify($s);
     }

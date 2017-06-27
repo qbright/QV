@@ -5,13 +5,13 @@ import vDomToDom from "./v-dom-to-dom";
 
 
 let handlerDiff = {
-    do_diff($diffTree){
+    do_diff($diffTree) {
 
         console.log($diffTree);
         this.walker($diffTree);
 
     },
-    walker($diff){
+    walker($diff) {
         if ($diff.diff.length) {
             let $r = true;
 
@@ -26,7 +26,13 @@ let handlerDiff = {
                 }
 
                 if (d.diff.indexOf("add") !== -1) {
-                    $r = this.addNode(d.$dom);
+
+                    if (i == ($diff.diff.length - 1)) {//最后一个，直接插入
+                        console.log($diff);
+                        $r = this.addNode(d.$dom);
+                    }
+
+
                 }
 
                 $r && this.walkerChildren(d.children);
@@ -40,12 +46,12 @@ let handlerDiff = {
         }
 
     },
-    walkerChildren($diffs = []){
+    walkerChildren($diffs = []) {
         for (let i = 0, $d; $d = $diffs[i]; i++) {
             this.walker($d);
         }
     },
-    replaceNode($oldDom, $dom){
+    replaceNode($oldDom, $dom) {
         if ($oldDom.type !== "frag") {
             $oldDom.$rDom.parentNode.replaceChild(vDomToDom.compiler($dom), $oldDom.$rDom);
         } else { //针对 frag 做特殊处理
@@ -56,13 +62,12 @@ let handlerDiff = {
         }
         return false;
     },
-    removedNode($dom){
+    removedNode($dom) {
         $dom.$rDom.parentNode.removeChild($dom.$rDom);
         return false;
     },
-    addNode($dom){
-
-
+    addNode($dom) {
+        console.log($dom);
     }
 
 
