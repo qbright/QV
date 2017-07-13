@@ -7,6 +7,11 @@ const listDiff = {
 
         // console.log(oldMap, newMap);
 
+        if (oldMap.free.length !== newMap.free.length) {
+            console.log(oldMap, newMap);
+            debugger;
+        }
+
         let newFree = newMap.free;
 
         let oldKeyIndex = oldMap.keyIndex,
@@ -55,7 +60,6 @@ const listDiff = {
 
         while (i < simulateList.length) {
             if (simulateList[i] === null) {
-                console.log(simulateList[i]);
                 remove(i);
                 removeSimulate(i);
             } else {
@@ -74,6 +78,7 @@ const listDiff = {
             let simulateItem = simulateList[j],
                 simulateItemKey = this.getItemKey(simulateItem, key);
 
+            // console.log(simulateItem, itemKey, simulateItemKey);
             if (simulateItem) {
                 if (itemKey === simulateItemKey) {
                     j++;

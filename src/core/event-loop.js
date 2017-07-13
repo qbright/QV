@@ -5,12 +5,12 @@
 
 let EventLoop = {
     d_o(fn) {
-        // fn();
+        fn();
 
-        let p = Promise.resolve();
-        p.then(fn).catch((e) => {
-            console.log(e);
-        });
+        // let p = Promise.resolve();
+        // p.then(fn).catch((e) => {
+        //     console.log(e);
+        // });
     }
 
 }

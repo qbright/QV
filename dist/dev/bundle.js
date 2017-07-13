@@ -223,6 +223,7 @@ var htmlParse = function (html, options) {
             }
 
             if (!current.voidElement && !inComponent && nextChar && nextChar !== '<') {
+                var content = html.slice(start, html.indexOf('<', start));
                 current.children.push({
                     type: 'text',
                     content: html.slice(start, html.indexOf('<', start)),
@@ -262,8 +263,28 @@ var htmlParse = function (html, options) {
         }
     });
 
+    result = [filterEmptyDom(result[0])];
+
     return result;
 };
+//去除空的 text 节点
+function filterEmptyDom($dom) {
+
+    $dom.children = $dom.children.filter(function (item) {
+        if (item.type === "text") {
+            if (item.content.trim()) {
+                return true;
+            }
+            return false;
+        } else {
+
+            filterEmptyDom(item);
+            return true;
+        }
+    });
+
+    return $dom;
+}
 
 /**
  * Created by zhengqiguang on 2017/6/15.
@@ -660,13 +681,13 @@ var compiler_helper = {
     VDomFrag: VDomFrag,
 
     setParent: function setParent($s, parentNode) {
-        $s.parentNode = parentNode;
+        // $s.parentNode = parentNode;
     },
     setBother: function setBother($children) {
-        for (var i = 0, $c; $c = $children[i]; i++) {
-            $c.prev = $children[i - 1];
-            $c.next = $children[i + 1];
-        }
+        // for (let i = 0, $c; $c = $children[i]; i++) {
+        //     $c.prev = $children[i - 1];
+        //     $c.next = $children[i + 1];
+        // }
     },
     insertFragment: function insertFragment($t, $fragment) {
         for (var i = 0, $c; $c = $fragment.children[i]; i++) {
@@ -994,6 +1015,7 @@ var patch = {
         for (var i = 0; i < len; i++) {
             var child = node.childNodes[i];
             walker.index++;
+            console.log(walker.index - 1, child);
             this.dfsWalk(child, walker, patches);
         }
 
@@ -1008,7 +1030,8 @@ var patch = {
 
             switch (currentPatch.type) {
                 case _this.REPLACE:
-                    var newNode = v_dom_to_dom.compiler(currentPatch.node);
+                    console.log(currentPatch);
+                    var newNode = v_dom_to_dom.compiler(currentPatch.newNode);
                     node.parentNode.replaceChild(newNode, node);
                     break;
 
@@ -1020,15 +1043,48 @@ var patch = {
                     _this.setAttrs(node, currentPatch.props);
                     break;
                 case _this.TEXT:
-                    node.textContent = currentPatch.node.content;
+                    node.textContent = currentPatch.newNode.content;
                     break;
                 default:
                     throw new Error("Unkown patch type " + currentPach.type);
             }
         });
     },
-    setAttrs: function setAttrs(node, attrs) {},
-    reorderChildren: function reorderChildren(node, moves) {}
+    setAttrs: function setAttrs(node, attrs) {
+        for (var key in attrs) {
+            if (attrs[key] === void 0) {
+                node.removeAttribute(key);
+            } else {
+                var value = attr[key];
+                _.setAttr(node, key, value);
+            }
+        }
+    },
+    reorderChildren: function reorderChildren(node, moves) {
+        var staticNodeList = _.toArray(node.childNodes),
+            maps = {};
+
+        _.each(staticNodeList, function (node) {
+            if (node.nodeType === 1) {
+                var key = node.getAttribute("key");
+                key && (maps[key] = node);
+            }
+        });
+
+        _.each(moves, function (move) {
+            var index = move.index;
+            if (move.type === 0) {
+                if (staticNodeList[index] === node.childNodes[index]) {
+                    node.removeChild(node.childNodes[index]);
+                }
+                staticNodeList.splice(index, 1);
+            } else if (move.type === 1) {
+                var insertNode = maps[move.item.key] ? maps[move.item.key] : v_dom_to_dom.compiler(move.item);
+                staticNodeList.splice(index, 0, insertNode);
+                node.insertBefore(insertNode, node.childNodes[index] || null);
+            }
+        });
+    }
 };
 
 var listDiff = {
@@ -1041,6 +1097,11 @@ var listDiff = {
             newMap = this.convertListByKey(newList, key);
 
         // console.log(oldMap, newMap);
+
+        if (oldMap.free.length !== newMap.free.length) {
+            console.log(oldMap, newMap);
+            debugger;
+        }
 
         var newFree = newMap.free;
 
@@ -1092,7 +1153,6 @@ var listDiff = {
 
         while (i < simulateList.length) {
             if (simulateList[i] === null) {
-                console.log(simulateList[i]);
                 remove(i);
                 removeSimulate(i);
             } else {
@@ -1110,6 +1170,7 @@ var listDiff = {
             var simulateItem = simulateList[j],
                 simulateItemKey = this.getItemKey(simulateItem, key);
 
+            // console.log(simulateItem, itemKey, simulateItemKey);
             if (simulateItem) {
                 if (itemKey === simulateItemKey) {
                     j++;
@@ -1171,6 +1232,9 @@ var listDiff = {
 
 var diff = {
     d_o: function d_o(oldTree, newTree) {
+
+        console.log(oldTree, newTree);
+
         var index = 0,
             patches = {};
 
@@ -1194,7 +1258,7 @@ var diff = {
 
         } else if (oldNode.type === "text" && newNode.type === "text") {
             if (oldNode.content !== newNode.content) {
-                currentPatch.push({ type: patch.TEXT, newNode: newNode });
+                currentPatch.push({ type: patch.REPLACE, newNode: newNode });
             }
         } else if (oldNode.type === "tag" && newNode.type === "tag" && //如果 type 和标签名是一样的
         oldNode.tagName === newNode.tagName) {
@@ -1204,14 +1268,15 @@ var diff = {
             }
             this.diffChildren(oldNode.children, newNode.children, index, patches, currentPatch);
         } else {
-            currentPatch.push({ type: patch.REPLACE, node: newNode });
+            currentPatch.push({ type: patch.REPLACE, newNode: newNode });
         }
 
         if (currentPatch.length) {
             patches[index] = currentPatch;
         }
     },
-    diffChildren: function diffChildren(oldChildren) {
+    diffChildren: function diffChildren() {
+        var oldChildren = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var newChildren = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
         var index = arguments[2];
 
@@ -1223,7 +1288,7 @@ var diff = {
 
         var diffs = listDiff.diff(oldChildren, newChildren, 'key');
 
-        console.log(diffs);
+        // console.log(diffs);
 
         newChildren = diffs.children;
 
@@ -1293,6 +1358,7 @@ var render = {
             $node.$vDom = $vdom;
             this.replaceNode($d, $node);
         } else {
+
             var patches = diff.d_o($node.$vDom.value, $vdom.value);
             console.warn("warn:", patches);
             patch.patch($node.$el, patches);
@@ -1353,12 +1419,12 @@ var Compiler = function () {
 
 var EventLoop = {
     d_o: function d_o(fn) {
-        // fn();
+        fn();
 
-        var p = Promise.resolve();
-        p.then(fn).catch(function (e) {
-            console.log(e);
-        });
+        // let p = Promise.resolve();
+        // p.then(fn).catch((e) => {
+        //     console.log(e);
+        // });
     }
 };
 

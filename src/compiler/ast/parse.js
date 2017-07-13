@@ -40,6 +40,7 @@ export default function (html, options) {
             }
 
             if (!current.voidElement && !inComponent && nextChar && nextChar !== '<') {
+                let content = html.slice(start, html.indexOf('<', start));
                 current.children.push({
                     type: 'text',
                     content: html.slice(start, html.indexOf('<', start)),
@@ -79,5 +80,31 @@ export default function (html, options) {
         }
     });
 
+
+    result = [filterEmptyDom(result[0])];
+
+
     return result;
 };
+//去除空的 text 节点
+function filterEmptyDom($dom) {
+
+    $dom.children = $dom.children.filter(item => {
+        if (item.type === "text") {
+            if (item.content.trim()) {
+                return true;
+            }
+            return false;
+        } else {
+
+            filterEmptyDom(item);
+            return true;
+
+        }
+
+
+    });
+
+    return $dom;
+
+}

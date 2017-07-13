@@ -17,6 +17,7 @@ const patch = {
         for (let i = 0; i < len; i++) {
             let child = node.childNodes[i];
             walker.index++;
+            console.log(walker.index - 1, child);
             this.dfsWalk(child, walker, patches);
         }
 
@@ -31,7 +32,8 @@ const patch = {
 
             switch (currentPatch.type) {
                 case this.REPLACE:
-                    let newNode = vDomToDom.compiler(currentPatch.node);
+                    console.log(currentPatch);
+                    let newNode = vDomToDom.compiler(currentPatch.newNode);
                     node.parentNode.replaceChild(newNode, node);
                     break;
 
@@ -43,7 +45,7 @@ const patch = {
                     this.setAttrs(node, currentPatch.props);
                     break;
                 case this.TEXT:
-                    node.textContent = currentPatch.node.content;
+                    node.textContent = currentPatch.newNode.content;
                     break;
                 default:
                     throw new Error(`Unkown patch type ${currentPach.type}`);
@@ -54,10 +56,41 @@ const patch = {
 
     },
     setAttrs(node, attrs) {
-
+        for (var key in attrs) {
+            if (attrs[key] === void 0) {
+                node.removeAttribute(key);
+            } else {
+                var value = attr[key]
+                _.setAttr(node, key, value);
+            }
+        }
 
     },
     reorderChildren(node, moves) {
+        let staticNodeList = _.toArray(node.childNodes),
+            maps = {};
+
+        _.each(staticNodeList, node => {
+            if (node.nodeType === 1) {
+                let key = node.getAttribute("key");
+                key && (maps[key] = node);
+            }
+        });
+
+        _.each(moves, move => {
+            let index = move.index;
+            if (move.type === 0) {
+                if (staticNodeList[index] === node.childNodes[index]) {
+                    node.removeChild(node.childNodes[index]);
+                }
+                staticNodeList.splice(index, 1);
+            } else if (move.type === 1) {
+                let insertNode = maps[move.item.key] ? maps[move.item.key] : vDomToDom.compiler(move.item);
+                staticNodeList.splice(index, 0, insertNode);
+                node.insertBefore(insertNode, node.childNodes[index] || null);
+            }
+        });
+
 
     }
 

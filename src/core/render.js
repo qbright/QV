@@ -21,6 +21,7 @@ const render = {
             $node.$vDom = $vdom;
             this.replaceNode($d, $node);
         } else {
+
             let patches = diff.d_o($node.$vDom.value, $vdom.value);
             console.warn("warn:", patches);
             patch.patch($node.$el, patches);

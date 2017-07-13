@@ -4,6 +4,9 @@ import listDiff from "./list-diff";
 
 const diff = {
     d_o(oldTree, newTree) {
+
+        console.log(oldTree, newTree);
+
         let index = 0,
             patches = {};
 
@@ -28,7 +31,7 @@ const diff = {
 
         } else if (oldNode.type === "text" && newNode.type === "text") {
             if (oldNode.content !== newNode.content) {
-                currentPatch.push({ type: patch.TEXT, newNode });
+                currentPatch.push({ type: patch.REPLACE, newNode });
             }
         } else if ((oldNode.type === "tag" && newNode.type === "tag") && //如果 type 和标签名是一样的
             (oldNode.tagName === newNode.tagName)) {
@@ -38,7 +41,7 @@ const diff = {
             }
             this.diffChildren(oldNode.children, newNode.children, index, patches, currentPatch);
         } else {
-            currentPatch.push({ type: patch.REPLACE, node: newNode });
+            currentPatch.push({ type: patch.REPLACE, newNode });
         }
 
         if (currentPatch.length) {
@@ -46,11 +49,13 @@ const diff = {
         }
 
     },
-    diffChildren(oldChildren, newChildren = [], index, patches, currentPatch) {
+    diffChildren(oldChildren = [], newChildren = [], index, patches, currentPatch) {
+
+
 
         let diffs = listDiff.diff(oldChildren, newChildren, 'key');
 
-        console.log(diffs);
+        // console.log(diffs);
 
         newChildren = diffs.children;
 

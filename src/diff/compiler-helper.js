@@ -15,13 +15,13 @@ const compiler_helper = {
     VDomFrag: VDomFrag,
 
     setParent($s, parentNode) {
-        $s.parentNode = parentNode;
+        // $s.parentNode = parentNode;
     },
     setBother($children) {
-        for (let i = 0, $c; $c = $children[i]; i++) {
-            $c.prev = $children[i - 1];
-            $c.next = $children[i + 1];
-        }
+        // for (let i = 0, $c; $c = $children[i]; i++) {
+        //     $c.prev = $children[i - 1];
+        //     $c.next = $children[i + 1];
+        // }
     },
 
     insertFragment($t, $fragment) {
